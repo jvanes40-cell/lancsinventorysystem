@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANCS Storage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        /* ── Design tokens ── */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #eef2ff;
+            --primary-hover: #4338ca;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --border: #e8ecf0;
+            --text: #0f172a;
+            --text-2: #64748b;
+            --text-3: #94a3b8;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --radius: 10px;
+            --sidebar-w: 224px;
+        }
+
+        /* ── Base ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'DM Sans', system-ui, sans-serif; }
+        code, .mono { font-family: 'DM Mono', monospace; }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity:0; transform:translateY(-12px) scale(.98); }
+            to   { opacity:1; transform:translateY(0)    scale(1); }
+        }
+        @keyframes shimmer {
+            0%   { background-position: -600px 0; }
+            100% { background-position:  600px 0; }
+        }
+        @keyframes spinIn {
+            from { opacity:0; transform:rotate(-90deg) scale(.8); }
+            to   { opacity:1; transform:rotate(0)      scale(1); }
+        }
+
+        .fade-in    { animation: fadeUp    .28s cubic-bezier(.22,.68,0,1.15) both; }
+        .modal-content { animation: slideDown .22s cubic-bezier(.22,.68,0,1.2) both; }
+
+        /* Stagger children of stat cards */
+        #dashboardStats > div:nth-child(1) { animation-delay:.00s; }
+        #dashboardStats > div:nth-child(2) { animation-delay:.05s; }
+        #dashboardStats > div:nth-child(3) { animation-delay:.10s; }
+        #dashboardStats > div:nth-child(4) { animation-delay:.15s; }
+
+        /* ── Shimmer skeleton ── */
+        .stat-loading {
+            background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
+            background-size: 600px 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 4px;
+            color: transparent;
+            user-select: none;
+        }
+
+        /* ── Buttons ── */
+        .btn { transition: transform .14s ease, box-shadow .14s ease, background .14s ease; }
+        .btn:hover  { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.08); }
+        .btn:active { transform:translateY(0);    box-shadow:none; }
+
+        /* ── Sidebar nav ── */
+        .nav-item {
+            border-radius: 8px;
+            transition: background .13s, color .13s;
+            position: relative;
+        }
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 20%; bottom: 20%;
+            width: 3px;
+            background: var(--primary);
+            border-radius: 0 3px 3px 0;
+        }
+        .nav-item:hover:not(.active) { background: var(--surface-2); }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        /* ── Cards ── */
+        .card-shadow {
+            box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+            border: 1px solid var(--border);
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: .875rem;
+            transition: box-shadow .18s, transform .18s;
+        }
+        .stat-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,.07);
+            transform: translateY(-1px);
+        }
+        .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* ── Table ── */
+        tbody tr { transition: background .1s; }
+        tbody tr:hover { background: #f8fafc; }
+
+        /* ── Inputs ── */
+        input, select, textarea {
+            transition: border-color .15s, box-shadow .15s, background .15s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+            background: #fff !important;
+        }
+
+        /* ── Search highlight ── */
+        mark { background: #fef08a; border-radius: 2px; padding: 0 2px; }
+
+        /* ── Search debounce spinner ── */
+        #searchSpinner { transition: opacity .2s; }
+
+        /* ── Mobile bottom nav ── */
+        #mobileNav {
+            border-top: 1px solid var(--border);
+            background: rgba(255,255,255,.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .mobile-nav-btn {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 3px; padding: 6px 8px; border-radius: 10px;
+            transition: color .15s, background .15s;
+            color: var(--text-3); font-size: 10px; font-weight: 500;
+            min-width: 52px;
+        }
+        .mobile-nav-btn.active { color: var(--primary); background: var(--primary-light); }
+        .mobile-nav-btn svg { transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+        .mobile-nav-btn.active svg { transform: scale(1.15); }
+
+        /* ── Modal ── */
+        .modal-overlay { background: rgba(15,23,42,.4); backdrop-filter: blur(6px); }
+
+        /* ── Misc ── */
+        .tab-content.hidden { display:none; }
+        .uppercase-input { text-transform: uppercase; }
+        #print-area { display: none; }
+
+        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+        @media print { #app, .modal { display:none !important; } }
+
+        /* ── Debounced search indicator ── */
+        .search-wrap { position: relative; }
+        .search-wrap .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); pointer-events:none; }
+        .search-wrap input { padding-left: 38px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans antialiased text-gray-800 overflow-hidden">
+    
+    <div id="app" class="flex h-screen w-full">
+
+        <!-- ===== SIDEBAR (desktop only) ===== -->
+        <aside class="sidebar w-60 flex flex-col flex-shrink-0 hidden md:flex z-20">
+            <!-- Logo -->
+            <div class="h-16 flex items-center px-5 border-b border-slate-100">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mr-3 flex-shrink-0">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-gray-900 leading-tight">LANCS <span class="text-indigo-600">WMS</span></h1>
+                    <p class="text-xs text-gray-400 leading-tight">Warehouse Management</p>
+                </div>
+            </div>
+
+            <!-- Nav -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+                <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-2">Inventory</p>
+                <button data-tab="products" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-4.5 h-4.5 mr-3 flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Product List
+                </button>
+                <button data-tab="entry" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4"/></svg>Product Entry
+                </button>
+
+                <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-5">Transactions</p>
+                <button data-tab="surat-jalan" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>Withdraw Items
+                </button>
+                <button data-tab="withdrawal-history" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Withdrawal History
+                </button>
+
+                <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-5">System</p>
+                <button data-tab="history" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Activity Log
+                </button>
+                <button data-tab="stock-history" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Stock History
+                </button>
+            </nav>
+
+            <!-- User + Logout -->
+            <div class="p-4 border-t border-slate-100">
+                <div class="flex items-center mb-3 px-1">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 mr-2.5 flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ request.user.username }}</p>
+                        <p class="text-xs text-gray-400">{{ user_role|title }}</p>
+                    </div>
+                </div>
+                <form action="/logout/" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn w-full flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 transition">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Sign Out
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <div class="flex-1 flex flex-col w-0 overflow-hidden bg-slate-50">
+
+            <!-- Top header -->
+            <header class="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+                <div class="flex items-center">
+                    <!-- Mobile logo -->
+                    <div class="md:hidden flex items-center mr-3">
+                        <div class="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center mr-2">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                        <span class="font-bold text-gray-900 text-base">LANCS</span>
+                    </div>
+                    <!-- Page title updated by switchTab -->
+                    <h2 id="pageTitle" class="text-sm font-semibold text-gray-700 hidden md:block">Product List</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Search spinner -->
+                    <div id="searchSpinner" class="opacity-0">
+                        <svg class="w-4 h-4 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-200">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span class="font-medium text-gray-700">{{ request.user.username }}</span>
+                        <span class="text-gray-300">·</span>
+                        <span class="text-indigo-500 font-medium capitalize">{{ user_role }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">
+                <div class="max-w-7xl mx-auto">
+
+                    <!-- ===== DASHBOARD STATS ===== -->
+                    <div id="dashboardStats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div class="stat-card fade-in">
+                            <div class="stat-icon" style="background:#eef2ff;">
+                                <svg class="w-5 h-5" style="color:#4f46e5;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium" style="color:#64748b;">Total SKUs</p>
+                                <p id="statTotalSKUs" class="text-2xl font-bold stat-loading" style="color:#0f172a; letter-spacing:-.02em;">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card fade-in">
+                            <div class="stat-icon" style="background:#ecfdf5;">
+                                <svg class="w-5 h-5" style="color:#059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium" style="color:#64748b;">Total Qty</p>
+                                <p id="statTotalQty" class="text-2xl font-bold stat-loading" style="color:#0f172a; letter-spacing:-.02em;">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card fade-in">
+                            <div class="stat-icon" style="background:#fffbeb;">
+                                <svg class="w-5 h-5" style="color:#d97706;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium" style="color:#64748b;">Low Stock</p>
+                                <p id="statLowStock" class="text-2xl font-bold stat-loading" style="color:#d97706; letter-spacing:-.02em;">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card fade-in">
+                            <div class="stat-icon" style="background:#fef2f2;">
+                                <svg class="w-5 h-5" style="color:#dc2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium" style="color:#64748b;">Out of Stock</p>
+                                <p id="statOutOfStock" class="text-2xl font-bold stat-loading" style="color:#dc2626; letter-spacing:-.02em;">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: PRODUCTS ===== -->
+                    <div id="tab-products" class="tab-content fade-in bg-white rounded-xl card-shadow border border-gray-100">
+                        <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Inventory Overview</h2>
+                                <p class="text-sm text-gray-500 mt-1">Manage and view all items currently in the warehouse.</p>
+                            </div>
+                            <div class="flex flex-wrap space-x-3 items-center">
+                                <div class="bg-indigo-100 border border-indigo-200 text-indigo-800 px-4 py-2 rounded-lg font-bold shadow-sm flex items-center h-full">
+                                    Total Qty: <span id="totalQuantityBadge" class="ml-2 text-indigo-900 text-lg">0</span>
+                                </div>
+                                <button id="exportCsvBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm h-full">
+                                    <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-6 flex flex-col md:flex-row gap-4">
+                                <div class="relative flex-1">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                    </div>
+                                    <input type="text" id="productListSearch" placeholder="Search by Part No, Serial No, Description..." class="pl-10 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2.5 border">
+                                </div>
+                                <select id="categoryFilter" class="block w-full md:w-64 rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 border">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Part No</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Serial No</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">AWB</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
+                                            <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productTable" class="bg-white divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                            <div id="paginationControls" class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: ENTRY ===== -->
+                    <div id="tab-entry" class="tab-content hidden fade-in">
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100 mb-6">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                                <h2 class="text-xl font-bold text-gray-900">Add New Products</h2>
+                            </div>
+                            
+                            <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row gap-4 bg-white">
+                                <button id="bulkAddBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center text-sm shadow-sm flex-1 sm:flex-none">
+                                    <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Bulk Add via CSV
+                                </button>
+                                <button id="scanProductBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center text-sm shadow-sm flex-1 sm:flex-none">
+                                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg> Scan Barcode
+                                </button>
+                            </div>
+
+                            <div class="p-6">
+                                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Pre Order Number</label>
+                                        <input type="text" id="preOrderNumber" list="preOrderNumber-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="preOrderNumber-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Part Number</label>
+                                        <input type="text" id="partNumber" list="partNumber-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="partNumber-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Serial Number <span class="text-red-500">*</span></label>
+                                        <input type="text" id="serialNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">AWB (Airway Bill) <span class="text-xs text-gray-400 font-normal ml-1">(Optional)</span></label>
+                                        <input type="text" id="awb" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border" placeholder="e.g. AWB12345">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Product Code</label>
+                                        <input type="text" id="productCode" list="productCode-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="productCode-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Quantity <span class="text-red-500">*</span></label>
+                                        <input type="number" id="quantity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border">
+                                    </div>
+                                    <div class="lg:col-span-3">
+                                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                                        <input type="text" id="description" list="description-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="description-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Category</label>
+                                        <input type="text" id="category" list="category-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="category-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Platform</label>
+                                        <input type="text" id="platform" list="platform-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="platform-list"></datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Location</label>
+                                        <input type="text" id="location" list="location-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <datalist id="location-list"></datalist>
+                                    </div>
+                                </div>
+                                <div class="mt-8 flex justify-end">
+                                    <button id="addSingleBtn" class="btn bg-indigo-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-indigo-700 shadow-md flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> Save Product
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: SURAT JALAN ===== -->
+                    <div id="tab-surat-jalan" class="tab-content hidden fade-in">
+                        <form id="suratJalanForm">
+                            <div class="bg-white rounded-xl card-shadow border border-gray-100 mb-6">
+                                <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                                    <h2 class="text-xl font-bold text-gray-900">Withdraw Items (Surat Jalan)</h2>
+                                </div>
+                                
+                                <div class="p-6">
+                                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Request Date</label>
+                                            <input type="date" id="requestDate" name="requestDate" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">SDR No.</label>
+                                            <input type="text" id="sdrNo" name="sdrNo" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                                            <input type="text" id="projectName" name="projectName" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Requestor</label>
+                                            <input type="text" id="requestor" name="requestor" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Name</label>
+                                            <input type="text" id="recipient" name="recipient" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Phone</label>
+                                            <input type="text" id="telephone" name="telephone" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
+                                            <input type="text" id="siteName" name="siteName" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Subsystem</label>
+                                            <input type="text" id="subsystem" name="subsystem" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">PIC at Site</label>
+                                            <input type="text" id="picAtSite" name="picAtSite" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">PIC Mobile</label>
+                                            <input type="text" id="picMobile" name="picMobile" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div class="lg:col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Transport Mode</label>
+                                            <input type="text" id="transportMode" name="transportMode" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                        </div>
+                                        <div class="lg:col-span-4">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Destination Address</label>
+                                            <textarea id="address" name="address" rows="2" class="block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 px-3 border"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl card-shadow border border-gray-100 mb-12">
+                                <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center rounded-t-xl">
+                                    <h3 class="text-lg font-bold text-gray-900">Selected Items</h3>
+                                    <button type="button" id="addItemToSuratJalanBtn" class="btn bg-indigo-100 text-indigo-700 font-semibold py-1.5 px-4 rounded-md hover:bg-indigo-200 text-sm flex items-center border border-indigo-300">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Add Item
+                                    </button>
+                                </div>
+                                <div class="p-6">
+                                    <div id="suratJalanItems" class="space-y-3 mb-6 min-h-[100px] border-2 border-dashed border-gray-200 rounded-lg p-4 bg-gray-50 flex flex-col justify-center"></div>
+
+                                    <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100">
+                                        <button type="submit" id="finalizeSuratJalanBtn" class="btn bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700 flex justify-center items-center shadow-md">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Finalize & Deduct Stock
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ===== TAB: WITHDRAWAL HISTORY ===== -->
+                    <div id="tab-withdrawal-history" class="tab-content hidden fade-in bg-white rounded-xl card-shadow border border-gray-100 mb-12">
+                        <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                            <h2 class="text-xl font-bold text-gray-900">Withdrawal History</h2>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-6 relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </div>
+                                <input type="text" id="suratJalanHistorySearch" placeholder="Search by Project, PIC, SDR No..." class="pl-10 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2.5 border">
+                            </div>
+                            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SDR No.</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Project Name</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">PIC at Site</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Items Out</th>
+                                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="suratJalanHistoryTable" class="bg-white divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: ACTIVITY LOG ===== -->
+                    <div id="tab-history" class="tab-content hidden fade-in bg-white rounded-xl card-shadow border border-gray-100 mb-12">
+                        <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                            <h2 class="text-xl font-bold text-gray-900">System Activity Log</h2>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-6 relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </div>
+                                <input type="text" id="activityHistorySearch" placeholder="Search logs..." class="pl-10 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2.5 border">
+                            </div>
+                            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-48">Timestamp</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-32">User</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-32">Action</th>
+                                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="activityHistoryTable" class="bg-white divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TAB: STOCK HISTORY ===== -->
+                    <div id="tab-stock-history" class="tab-content hidden fade-in">
+
+                        <!-- Header -->
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100 mb-6">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">📦 Stock Movement History</h2>
+                                    <p class="text-sm text-gray-500 mt-1">Full audit trail of every stock IN, OUT, and adjustment.</p>
+                                </div>
+                            </div>
+
+                            <!-- Summary Cards (shown when filtering by serial) -->
+                            <div id="smSummaryCards" class="hidden p-6 pb-0">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                                        <p class="text-xs font-semibold text-green-600 uppercase tracking-wider">Total IN</p>
+                                        <p id="smTotalIn" class="text-2xl font-bold text-green-700 mt-1">—</p>
+                                    </div>
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                                        <p class="text-xs font-semibold text-red-600 uppercase tracking-wider">Total OUT</p>
+                                        <p id="smTotalOut" class="text-2xl font-bold text-red-700 mt-1">—</p>
+                                    </div>
+                                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                                        <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Adjustments</p>
+                                        <p id="smTotalAdjust" class="text-2xl font-bold text-amber-700 mt-1">—</p>
+                                    </div>
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Current Stock</p>
+                                        <p id="smCurrentQty" class="text-2xl font-bold text-blue-700 mt-1">—</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="p-6">
+                                <div class="flex flex-col md:flex-row gap-3 mb-5">
+                                    <input id="smFilterSerial" type="text" placeholder="Filter by Serial Number..." class="flex-1 rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:bg-white focus:border-indigo-500 sm:text-sm py-2.5 px-3 border uppercase-input">
+                                    <select id="smFilterType" class="md:w-48 rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:bg-white focus:border-indigo-500 sm:text-sm py-2.5 px-3 border">
+                                        <option value="">All Types</option>
+                                        <option value="IN">Stock In</option>
+                                        <option value="OUT">Stock Out</option>
+                                        <option value="ADJUST">Adjustment</option>
+                                    </select>
+                                    <input id="smFilterDate" type="date" title="Show from this date" class="md:w-44 rounded-lg border-gray-300 bg-gray-50 shadow-sm focus:bg-white focus:border-indigo-500 sm:text-sm py-2.5 px-3 border">
+                                    <button onclick="loadStockMovements()" class="btn bg-indigo-600 text-white font-medium py-2.5 px-5 rounded-lg hover:bg-indigo-700 shadow-sm flex items-center justify-center text-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Search
+                                    </button>
+                                    <button onclick="clearSMFilters()" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 text-sm">✕ Clear</button>
+                                </div>
+
+                                <!-- Movement Table -->
+                                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Timestamp</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Serial No</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Part No</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Before</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">After</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Reference</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Note</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">By</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Undo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="smTableBody" class="bg-white divide-y divide-gray-200">
+                                            <tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">Use the filters above and click Search to load movements.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p id="smRecordCount" class="text-xs text-gray-400 mt-3"></p>
+                            </div>
+                        </div>
+
+                        <!-- Manual Adjustment Form (Staff only) -->
+                        {% if can_edit_stock %}
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                                <h3 class="text-lg font-bold text-gray-900">🔧 Manual Stock Adjustment</h3>
+                                <p class="text-sm text-gray-500 mt-1">Correct stock counts after a physical audit, or record damaged / lost units.</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid md:grid-cols-3 gap-5 max-w-3xl">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number <span class="text-red-500">*</span></label>
+                                        <input id="adjSerial" type="text" placeholder="e.g. SN-001" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment <span class="text-red-500">*</span></label>
+                                        <input id="adjDelta" type="number" placeholder="-3 to reduce, +5 to add" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                        <p class="text-xs text-gray-400 mt-1">Negative = reduce, positive = add</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Reason <span class="text-red-500">*</span></label>
+                                        <input id="adjNote" type="text" placeholder="e.g. 3 units damaged in inspection" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                    </div>
+                                </div>
+                                <div class="mt-5 flex items-center gap-4">
+                                    <button onclick="submitAdjustment()" class="btn bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 shadow-md flex items-center text-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Submit Adjustment
+                                    </button>
+                                    <p id="adjFeedback" class="text-sm font-medium"></p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ===== MOBILE BOTTOM NAV ===== -->
+    <nav id="mobileNav" class="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-2 py-2">
+        <button data-tab="products" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            Stock
+        </button>
+        <button data-tab="entry" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v16m8-8H4"/></svg>
+            Entry
+        </button>
+        <button data-tab="surat-jalan" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            Withdraw
+        </button>
+        <button data-tab="withdrawal-history" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            History
+        </button>
+        <button data-tab="history" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Log
+        </button>
+        <button data-tab="stock-history" class="tab-btn mobile-nav-btn">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+            Moves
+        </button>
+    </nav>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-sm mx-auto z-50 relative border border-gray-100">
+            <h3 id="messageModalTitle" class="text-lg font-bold mb-2 text-gray-900"></h3>
+            <p id="messageModalBody" class="text-sm text-gray-600 mb-6"></p>
+            <div class="flex justify-end">
+                <button id="closeMessageModal" class="bg-indigo-600 text-white py-2 px-5 rounded-lg btn font-medium">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantity Input Modal -->
+    <div id="qtyInputModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full mx-auto z-50 relative border border-gray-100">
+            <h3 class="text-lg font-bold mb-4 text-gray-900" id="qtyModalTitle">Input Quantity</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <input type="number" id="qtyInput" min="1" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm p-2 border" />
+                <p id="qtyModalMaxText" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="closeQtyModalBtn" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                <button id="confirmQtyModalBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-700">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Modal -->
+    <div id="bulkAddModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl w-full max-w-md mx-auto z-50 relative border border-gray-100">
+            <h3 class="text-lg font-bold mb-2 text-gray-900">Bulk Add via CSV</h3>
+            <p class="text-sm text-gray-500 mb-4">Upload a CSV file. Required headers: <code class="bg-gray-100 px-1 rounded text-xs">preOrderNumber, partNumber, serialNumber, awb, productCode, description, quantity, category, platform, location</code></p>
+            <div class="mb-4">
+                <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-gray-200 rounded-lg p-2 bg-gray-50"/>
+            </div>
+            <div class="mt-8 flex justify-end space-x-3">
+                <button id="closeBulkModalBtn" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                <button id="submitBulkModalBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-700">Upload & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-3xl w-full mx-auto z-50 relative border border-gray-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Edit Product</h3>
+                <button type="button" id="closeEditModalTop" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="editProductForm" class="space-y-4 overflow-y-auto flex-1 pr-2">
+                <input type="hidden" id="editProductSerial" name="serialNumber">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pre Order Number</label>
+                        <input type="text" id="editPreOrderNumber" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Part Number</label>
+                        <input type="text" id="editPartNumber" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Product Code</label>
+                        <input type="text" id="editProductCode" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">AWB (Airway Bill)</label>
+                        <input type="text" id="editAwb" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                        <input type="number" id="editQuantity" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                    </div>
+                    <div class="lg:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="editDescription" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <input type="text" id="editCategory" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+                        <input type="text" id="editPlatform" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <input type="text" id="editLocation" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                    </div>
+                </div>
+                <div class="mt-8 pt-4 border-t border-gray-100 flex justify-end space-x-3">
+                    <button type="button" id="closeEditModalBtn" class="bg-white border border-gray-300 text-gray-700 py-2 px-5 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                    <button type="submit" id="saveEditBtn" class="bg-indigo-600 text-white py-2 px-5 rounded-lg font-medium hover:bg-indigo-700 shadow-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="qrScannerModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-xl w-full mx-auto z-50 relative border border-gray-100">
+            <h3 class="text-xl font-bold mb-4 text-center text-gray-900">Scan Product QR/Barcode</h3>
+            <div id="qr-reader" class="w-full h-auto overflow-hidden rounded-lg border-2 border-dashed border-gray-300"></div>
+            <p id="qr-result-display" class="mt-4 text-center text-gray-700 font-medium"></p>
+            <div class="mt-6 flex justify-center gap-3">
+                <button id="closeQrScannerModal" class="bg-gray-200 text-gray-800 py-2 px-8 rounded-lg font-medium hover:bg-gray-300">Close Scanner</button>
+                <button id="cancelScanBtn" class="hidden bg-red-500 text-white py-2 px-8 rounded-lg font-medium hover:bg-red-600">Stop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select Item Modal -->
+    <div id="selectItemModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-3xl w-full mx-auto z-50 relative border border-gray-100 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Select Item</h3>
+                <button id="closeSelectItemModalBtn" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="mb-4">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <input type="text" id="selectItemSearch" placeholder="Search by Part No, Description..." class="pl-10 block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm sm:text-sm uppercase-input py-2 border">
+                </div>
+            </div>
+            <div class="overflow-y-auto flex-1 border border-gray-200 rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="px-6 py-3 text-left w-24">Action</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Part No</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Serial No</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Avail. Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectItemTable" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div id="productDetailsModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-full mx-auto z-50 relative border border-gray-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900" id="productDetailsTitle">Product History</h3>
+                    <p class="text-sm text-gray-500 mt-1">Lifecycle of the selected item.</p>
+                </div>
+                <button id="closeProductDetailsBtn" class="text-gray-400 hover:text-gray-600 bg-gray-100 rounded-full p-2 hover:bg-gray-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-y-auto flex-1 border border-gray-200 rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">SDR No / Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Project / Info</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Recipient</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Qty Change</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productDetailsTable" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
+        // ===========================================================
+        // FIX 1: CSRF helper — reads token from cookie, not from a
+        // <form> hidden input (which may not exist on every page).
+        // ===========================================================
+        function getCsrfToken() {
+            const match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? match[1] : '';
+        }
+
+        // --------------- STATE ---------------
+        const state = {
+            activeTab: 'products',
+            suratJalanHistory: [],
+            products: [],
+            activityHistory: [],
+            currentPage: 1,
+            itemsPerPage: 50,
+            currentSuratJalan: { items: [] },
+        };
+
+        // --------------- ELEMENT CACHE ---------------
+        const elements = {
+            tabButtons: document.querySelectorAll('.tab-btn'),
+            tabContents: document.querySelectorAll('.tab-content'),
+            preOrderNumber: document.getElementById('preOrderNumber'),
+            partNumber: document.getElementById('partNumber'),
+            serialNumber: document.getElementById('serialNumber'),
+            productCode: document.getElementById('productCode'),
+            awb: document.getElementById('awb'),
+            description: document.getElementById('description'),
+            quantity: document.getElementById('quantity'),
+            category: document.getElementById('category'),
+            platform: document.getElementById('platform'),
+            location: document.getElementById('location'),
+            addSingleBtn: document.getElementById('addSingleBtn'),
+            bulkAddBtn: document.getElementById('bulkAddBtn'),
+            scanProductBtn: document.getElementById('scanProductBtn'),
+            productListSearch: document.getElementById('productListSearch'),
+            categoryFilter: document.getElementById('categoryFilter'),
+            productTable: document.getElementById('productTable'),
+            totalQuantityBadge: document.getElementById('totalQuantityBadge'),
+            exportCsvBtn: document.getElementById('exportCsvBtn'),
+            activityHistorySearch: document.getElementById('activityHistorySearch'),
+            activityHistoryTable: document.getElementById('activityHistoryTable'),
+            suratJalanForm: document.getElementById('suratJalanForm'),
+            suratJalanItemsContainer: document.getElementById('suratJalanItems'),
+            addItemToSuratJalanBtn: document.getElementById('addItemToSuratJalanBtn'),
+            messageModal: document.getElementById('messageModal'),
+            messageModalTitle: document.getElementById('messageModalTitle'),
+            messageModalBody: document.getElementById('messageModalBody'),
+            bulkAddModal: document.getElementById('bulkAddModal'),
+            qrScannerModal: document.getElementById('qrScannerModal'),
+            closeQrScannerModal: document.getElementById('closeQrScannerModal'),
+            qrReaderDiv: document.getElementById('qr-reader'),
+            qrResultDisplay: document.getElementById('qr-result-display'),
+            cancelScanBtn: document.getElementById('cancelScanBtn'),
+            selectItemModal: document.getElementById('selectItemModal'),
+            selectItemSearch: document.getElementById('selectItemSearch'),
+            selectItemTable: document.getElementById('selectItemTable'),
+            closeSelectItemModalBtn: document.getElementById('closeSelectItemModalBtn'),
+            editProductModal: document.getElementById('editProductModal'),
+            editProductForm: document.getElementById('editProductForm'),
+            editProductSerial: document.getElementById('editProductSerial'),
+            closeEditModalBtn: document.getElementById('closeEditModalBtn'),
+            closeEditModalTop: document.getElementById('closeEditModalTop'),
+            suratJalanHistoryTable: document.getElementById('suratJalanHistoryTable'),
+            suratJalanHistorySearch: document.getElementById('suratJalanHistorySearch'),
+            qtyInputModal: document.getElementById('qtyInputModal'),
+            qtyInput: document.getElementById('qtyInput'),
+            qtyModalTitle: document.getElementById('qtyModalTitle'),
+            qtyModalMaxText: document.getElementById('qtyModalMaxText'),
+            closeQtyModalBtn: document.getElementById('closeQtyModalBtn'),
+            confirmQtyModalBtn: document.getElementById('confirmQtyModalBtn'),
+            productDetailsModal: document.getElementById('productDetailsModal'),
+            productDetailsTitle: document.getElementById('productDetailsTitle'),
+            productDetailsTable: document.getElementById('productDetailsTable'),
+            closeProductDetailsBtn: document.getElementById('closeProductDetailsBtn'),
+        };
+
+        // --------------- MODAL HELPER ---------------
+        function toggleModal(modal, show) {
+            modal.classList.toggle('invisible', !show);
+        }
+
+        function showMessage(title, message) {
+            elements.messageModalTitle.textContent = title;
+            elements.messageModalBody.textContent = message;
+            toggleModal(elements.messageModal, true);
+        }
+        // Use once so we don't pile up listeners
+        document.getElementById('closeMessageModal').addEventListener('click', () => toggleModal(elements.messageModal, false));
+
+        // --------------- API CALLS ---------------
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/api/products/');
+                const data = await response.json();
+                state.products = data.map(item => ({
+                    preOrderNumber: item.pre_order_number,
+                    partNumber: item.part_number,
+                    serialNumber: item.serial_number,
+                    productCode: item.product_code,
+                    awb: item.awb || '',
+                    description: item.description,
+                    quantity: item.quantity,
+                    category: item.category,
+                    platform: item.platform,
+                    location: item.location,
+                    dateAdded: item.date_added,
+                }));
+                populateDatalists();
+                renderProductList();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Failed to load products:', error);
+            }
+        }
+
+        async function fetchTransactions() {
+            try {
+                const response = await fetch('/api/transactions/');
+                const data = await response.json();
+                state.suratJalanHistory = data.map(trx => ({
+                    sdrNo:          trx.sdr_no,
+                    projectName:    trx.project_name,
+                    recipient:      trx.recipient,
+                    date:           trx.created_at,
+                    items:          JSON.parse(trx.items_json),
+                    requestDate:    trx.request_date,
+                    requestor:      trx.requestor,
+                    telephone:      trx.telephone,
+                    picAtSite:      trx.pic_at_site,
+                    picMobile:      trx.pic_mobile,
+                    subsystem:      trx.subsystem,
+                    siteName:       trx.site_name,
+                    transportMode:  trx.transport_mode,
+                    address:        trx.address,
+                    isRolledBack:   trx.is_rolled_back,
+                    rolledBackAt:   trx.rolled_back_at  || '',
+                    rollbackNote:   trx.rollback_note   || '',
+                }));
+                renderSuratJalanHistory();
+            } catch (error) {
+                console.error('Failed to load transactions:', error);
+            }
+        }
+
+        async function fetchActivityLogs() {
+            try {
+                const response = await fetch('/api/activity-logs/?limit=200');
+                const data = await response.json();
+                state.activityHistory = data;
+                renderActivityHistory();
+            } catch (error) {
+                console.error('Failed to load activity logs:', error);
+            }
+        }
+
+        async function addProduct(product) {
+            try {
+                const response = await fetch('/api/add-product/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify(product),
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    fetchProducts();
+                    fetchActivityLogs();
+                    showMessage('Success', 'Produk tersimpan di Server!');
+                } else {
+                    showMessage('Error', result.message);
+                }
+            } catch (e) {
+                showMessage('Error', 'Koneksi Server Gagal.');
+            }
+        }
+
+        async function updateProduct(updatedProduct) {
+            try {
+                const response = await fetch('/api/edit-product/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify(updatedProduct),
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    fetchProducts();
+                    fetchActivityLogs();
+                    showMessage('Success', 'Produk berhasil diupdate!');
+                } else {
+                    showMessage('Error', result.message);
+                }
+            } catch (e) {
+                showMessage('Error', 'Koneksi Server Gagal');
+            }
+        }
+
+        async function deleteProduct(serialNumber) {
+            try {
+                const response = await fetch('/api/delete-product/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ serialNumber }),
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    fetchProducts();
+                    fetchActivityLogs();
+                    showMessage('Success', 'Produk dihapus!');
+                } else {
+                    showMessage('Error', result.message);
+                }
+            } catch (e) {
+                showMessage('Error', 'Koneksi Server Gagal');
+            }
+        }
+
+        async function handleFinalizeSuratJalan(e) {
+            e.preventDefault();
+            const form = e.target;
+
+            if (state.currentSuratJalan.items.length === 0) {
+                showMessage('Error', 'Masukin dulu barangnya, Brok!');
+                return;
+            }
+
+            const newTransaction = {
+                requestDate: form.requestDate.value,
+                requestor: form.requestor.value,
+                telephone: form.telephone.value,
+                sdrNo: form.sdrNo.value,
+                projectName: form.projectName.value,
+                recipient: form.recipient.value,
+                picAtSite: form.picAtSite.value,
+                picMobile: form.picMobile.value,
+                subsystem: form.subsystem.value,
+                siteName: form.siteName.value,
+                transportMode: form.transportMode.value,
+                address: form.address.value,
+                items: state.currentSuratJalan.items,
+            };
+
+            try {
+                const response = await fetch('/api/add-transaction/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify(newTransaction),
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    fetchProducts();
+                    fetchTransactions();
+                    fetchActivityLogs();
+                    clearSuratJalanForm();
+                    showMessage('Success', 'Surat Jalan berhasil disimpan & Stok dikurangi!');
+                    switchTab('withdrawal-history');
+                } else {
+                    showMessage('Error', 'Gagal: ' + result.message);
+                }
+            } catch (e) {
+                showMessage('Error', 'Koneksi Server Bermasalah');
+            }
+        }
+
+        // --------------- DATALISTS ---------------
+        function populateDatalists() {
+            const datalistFields = ['preOrderNumber', 'partNumber', 'productCode', 'description', 'category', 'platform', 'location'];
+            const uniqueValues = {};
+            datalistFields.forEach(field => uniqueValues[field] = new Set());
+            state.products.forEach(product => {
+                datalistFields.forEach(field => { if (product[field]) uniqueValues[field].add(product[field]); });
+            });
+            datalistFields.forEach(field => {
+                const datalist = document.getElementById(`${field}-list`);
+                if (datalist) {
+                    datalist.innerHTML = '';
+                    uniqueValues[field].forEach(value => {
+                        const option = document.createElement('option');
+                        option.value = value;
+                        datalist.appendChild(option);
+                    });
+                }
+            });
+
+            const currentCat = elements.categoryFilter.value;
+            elements.categoryFilter.innerHTML = '<option value="">All Categories</option>';
+            Array.from(uniqueValues['category']).sort().forEach(cat => {
+                if (cat) elements.categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+            elements.categoryFilter.value = currentCat;
+        }
+
+        // --------------- RENDER FUNCTIONS ---------------
+
+        function renderProductList() {
+            const searchTerm = elements.productListSearch.value.toLowerCase();
+            const catFilter = elements.categoryFilter.value.toLowerCase();
+            const filteredProducts = state.products.filter(product => {
+                const matchesSearch = Object.values(product).some(v => String(v).toLowerCase().includes(searchTerm));
+                const matchesCat = catFilter === '' || String(product.category).toLowerCase() === catFilter;
+                return matchesSearch && matchesCat;
+            });
+
+            const totalQty = filteredProducts.reduce((sum, p) => sum + parseInt(p.quantity || 0, 10), 0);
+            elements.totalQuantityBadge.textContent = totalQty;
+
+            const totalPages = Math.ceil(filteredProducts.length / state.itemsPerPage) || 1;
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+            const productsToRender = filteredProducts.slice(
+                (state.currentPage - 1) * state.itemsPerPage,
+                state.currentPage * state.itemsPerPage
+            );
+
+            elements.productTable.innerHTML = productsToRender.length === 0
+                ? `<tr><td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">No products found.</td></tr>`
+                : productsToRender.map(product => {
+                    const qtyColor = product.quantity <= 0
+                        ? 'text-red-600 font-bold'
+                        : (product.quantity < 5 ? 'text-orange-600 font-medium' : 'text-gray-900');
+                    return `<tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.partNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.serialNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.awb || '-'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="${product.description}">${product.description || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyColor}">${product.quantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.location || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                            <button class="details-product-btn text-indigo-600 hover:text-indigo-900" data-serial-number="${product.serialNumber}">History</button>
+                            <button class="edit-product-btn text-blue-600 hover:text-blue-900" data-serial-number="${product.serialNumber}">Edit</button>
+                            <button class="delete-product-btn text-red-600 hover:text-red-900" data-serial-number="${product.serialNumber}">Del</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+            renderPaginationUI(filteredProducts.length, totalPages);
+        }
+
+        function renderPaginationUI(totalItems, totalPages) {
+            const container = document.getElementById('paginationControls');
+            if (!container) return;
+            if (totalItems === 0) { container.innerHTML = ''; return; }
+
+            const startItem = (state.currentPage - 1) * state.itemsPerPage + 1;
+            const endItem = Math.min(state.currentPage * state.itemsPerPage, totalItems);
+
+            container.innerHTML = `
+                <div class="text-sm text-gray-500">
+                    Showing <span class="font-medium text-gray-900">${startItem}</span> to
+                    <span class="font-medium text-gray-900">${endItem}</span> of
+                    <span class="font-medium text-gray-900">${totalItems}</span> results
+                </div>
+                <div class="flex space-x-2 mt-3 sm:mt-0">
+                    <button id="prevPageBtn" class="btn px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" ${state.currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                    <div class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md">Page ${state.currentPage} of ${totalPages}</div>
+                    <button id="nextPageBtn" class="btn px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" ${state.currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                </div>`;
+
+            document.getElementById('prevPageBtn')?.addEventListener('click', () => {
+                if (state.currentPage > 1) { state.currentPage--; renderProductList(); }
+            });
+            document.getElementById('nextPageBtn')?.addEventListener('click', () => {
+                if (state.currentPage < totalPages) { state.currentPage++; renderProductList(); }
+            });
+        }
+
+        function renderSuratJalanHistory() {
+            const searchTerm = elements.suratJalanHistorySearch.value.toLowerCase();
+            const filteredHistory = state.suratJalanHistory.filter(item => {
+                const itemsString = item.items.map(i => `${i.partNumber} ${i.serialNumber}`).join(' ');
+                return [item.projectName, item.picAtSite, item.sdrNo, itemsString]
+                    .some(v => String(v).toLowerCase().includes(searchTerm));
+            });
+            elements.suratJalanHistoryTable.innerHTML = '';
+            if (filteredHistory.length === 0) {
+                elements.suratJalanHistoryTable.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500">No history found.</td></tr>`;
+                return;
+            }
+            filteredHistory.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors';
+                const itemsList = item.items.map(i =>
+                    `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mr-1 mb-1">${i.partNumber} (x${i.quantity})</span>`
+                ).join('');
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${item.date}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">${item.sdrNo}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${item.projectName}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${item.picAtSite || '-'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 min-w-[200px]">${itemsList}</td>
+                    <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                        ${item.isRolledBack ? `
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
+                            ↩ Rolled Back
+                        </span>` : `
+                        <button class="edit-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-amber-700 bg-amber-100 hover:bg-amber-200 transition" data-sdr="${item.sdrNo}">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Edit
+                        </button>
+                        <button class="rollback-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition" data-sdr="${item.sdrNo}">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                            Rollback
+                        </button>`}
+                        <a href="/api/export-pdf/${item.sdrNo}/" target="_blank"
+                           class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition">
+                            PDF
+                        </a>
+                    </td>`;
+                elements.suratJalanHistoryTable.appendChild(row);
+            });
+        }
+
+        function renderActivityHistory() {
+            const searchTerm = elements.activityHistorySearch.value.toLowerCase();
+            const filteredHistory = state.activityHistory.filter(item =>
+                [item.timestamp, item.user, item.action, item.details]
+                    .some(v => String(v).toLowerCase().includes(searchTerm))
+            );
+            elements.activityHistoryTable.innerHTML = '';
+            if (filteredHistory.length === 0) {
+                elements.activityHistoryTable.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No activity logs found.</td></tr>`;
+                return;
+            }
+            filteredHistory.forEach(item => {
+                const actionMap = {
+                    'ADD': 'bg-green-100 text-green-800',
+                    'EDIT': 'bg-blue-100 text-blue-800',
+                    'DELETE': 'bg-red-100 text-red-800',
+                    'WITHDRAW': 'bg-purple-100 text-purple-800',
+                    'BULK_ADD': 'bg-yellow-100 text-yellow-800',
+                };
+                const actionColor = actionMap[item.action?.toUpperCase()] || 'bg-gray-100 text-gray-800';
+                elements.activityHistoryTable.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${item.timestamp}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-700 whitespace-nowrap">${item.user || 'System'}</td>
+                        <td class="px-6 py-4 text-sm whitespace-nowrap">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${actionColor}">${item.action}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${item.details}</td>
+                    </tr>`;
+            });
+        }
+
+        // ===========================================================
+        // FIX 2: renderSuratJalanItems — items container keeps its
+        // flex-col / flex layout which prevented the empty-state from
+        // centring when items exist.  Switched to a plain block div.
+        // ===========================================================
+        function renderSuratJalanItems() {
+            const container = elements.suratJalanItemsContainer;
+            // Remove flex justify-center when items exist so rows stack normally
+            if (state.currentSuratJalan.items.length === 0) {
+                container.classList.add('flex', 'flex-col', 'justify-center');
+                container.innerHTML = `<div class="text-center py-6"><p class="text-sm text-gray-500">No items added to the document yet.</p></div>`;
+                return;
+            }
+            container.classList.remove('flex', 'flex-col', 'justify-center');
+            container.innerHTML = state.currentSuratJalan.items.map((item, index) => `
+                <div class="flex flex-col p-4 border rounded-lg bg-white border-gray-200 shadow-sm group hover:border-indigo-300 transition-colors">
+                    <div class="flex items-center space-x-4 mb-3">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900">${item.partNumber}</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">SN: ${item.serialNumber}</span>
+                        </div>
+                        <span class="text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-100">Qty: ${item.quantity}</span>
+                        <button type="button" class="remove-sj-item-btn text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-md transition" data-index="${index}">
+                            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div>
+                        <input type="text"
+                            class="sj-remark-input block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-gray-50 uppercase-input"
+                            placeholder="Add remark / note (optional)..."
+                            data-index="${index}"
+                            value="${item.remark || ''}">
+                    </div>
+                </div>`).join('');
+        }
+
+        // ===========================================================
+        // FIX 3: Remove-item button event listener was MISSING in the
+        // original code. Added here via event delegation on the container.
+        // ===========================================================
+        elements.suratJalanItemsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.remove-sj-item-btn');
+            if (btn) {
+                const index = parseInt(btn.dataset.index, 10);
+                state.currentSuratJalan.items.splice(index, 1);
+                renderSuratJalanItems();
+            }
+        });
+
+        // Remark input delegation
+        elements.suratJalanItemsContainer.addEventListener('input', (e) => {
+            if (e.target.classList.contains('sj-remark-input')) {
+                state.currentSuratJalan.items[e.target.dataset.index].remark = e.target.value.toUpperCase();
+            }
+        });
+
+        // --------------- TAB SWITCHING ---------------
+        const TAB_TITLES = {
+            'products':           'Product List',
+            'entry':              'Product Entry',
+            'surat-jalan':        'Withdraw Items',
+            'withdrawal-history': 'Withdrawal History',
+            'history':            'Activity Log',
+            'stock-history':      'Stock History',
+        };
+
+        function switchTab(tabId) {
+            // Hide all tab panels
+            elements.tabContents.forEach(c => c.classList.toggle('hidden', c.id !== `tab-${tabId}`));
+
+            // Update all nav buttons (sidebar + mobile)
+            elements.tabButtons.forEach(b => {
+                const isActive = b.dataset.tab === tabId;
+                b.classList.toggle('active', isActive);
+            });
+
+            // Update page title in header
+            const titleEl = document.getElementById('pageTitle');
+            if (titleEl) titleEl.textContent = TAB_TITLES[tabId] || tabId;
+
+            state.activeTab = tabId;
+
+            // Trigger relevant data fetches
+            if (tabId === 'history')            fetchActivityLogs();
+            else if (tabId === 'products')      renderProductList();
+            else if (tabId === 'surat-jalan')   clearSuratJalanForm();
+            else if (tabId === 'withdrawal-history') renderSuratJalanHistory();
+        }
+
+        // --------------- DEBOUNCED SEARCH ---------------
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                const spinner = document.getElementById('searchSpinner');
+                if (spinner) spinner.style.opacity = '1';
+                timer = setTimeout(() => {
+                    fn(...args);
+                    if (spinner) spinner.style.opacity = '0';
+                }, delay);
+            };
+        }
+
+        const debouncedRenderProductList    = debounce(() => { state.currentPage = 1; renderProductList(); }, 220);
+        const debouncedRenderSuratJalan     = debounce(renderSuratJalanHistory, 220);
+        const debouncedRenderActivityHistory = debounce(renderActivityHistory, 220);
+        const debouncedRenderSelectItem     = debounce(renderSelectItemTable, 180);
+
+        // --------------- FORM HELPERS ---------------
+        function clearForm() {
+            ['preOrderNumber', 'partNumber', 'serialNumber', 'productCode', 'awb',
+             'description', 'quantity', 'category', 'platform', 'location'].forEach(id => {
+                elements[id].value = '';
+            });
+        }
+
+        function clearSuratJalanForm() {
+            elements.suratJalanForm.reset();
+            state.currentSuratJalan.items = [];
+            renderSuratJalanItems();
+            const dateInput = document.getElementById('requestDate');
+            if (dateInput) dateInput.valueAsDate = new Date();
+        }
+
+        // --------------- SINGLE ADD ---------------
+        function handleSingleAdd() {
+            const newProduct = {
+                preOrderNumber: elements.preOrderNumber.value.trim(),
+                partNumber: elements.partNumber.value.trim(),
+                serialNumber: elements.serialNumber.value.trim(),
+                productCode: elements.productCode.value.trim(),
+                awb: elements.awb.value.trim(),
+                description: elements.description.value.trim(),
+                quantity: parseInt(elements.quantity.value, 10),
+                category: elements.category.value.trim(),
+                platform: elements.platform.value.trim(),
+                location: elements.location.value.trim(),
+            };
+            if (!newProduct.partNumber || !newProduct.serialNumber || isNaN(newProduct.quantity)) {
+                showMessage('Error', 'Part Number, Serial Number, dan Quantity wajib diisi dengan benar.');
+                return;
+            }
+            addProduct(newProduct);
+            clearForm();
+        }
+
+        // --------------- SELECT ITEM (for Surat Jalan) ---------------
+        function renderSelectItemTable() {
+            const term = elements.selectItemSearch.value.toLowerCase();
+            const list = state.products.filter(p =>
+                p.quantity > 0 &&
+                (p.partNumber.toLowerCase().includes(term) ||
+                 p.serialNumber.toLowerCase().includes(term) ||
+                 (p.description || '').toLowerCase().includes(term))
+            );
+            elements.selectItemTable.innerHTML = list.length === 0
+                ? `<tr><td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No available items found.</td></tr>`
+                : list.map(p => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-left w-24">
+                            <button class="add-to-sj-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium py-1.5 px-4 rounded transition border border-indigo-200 shadow-sm"
+                                    data-serial-number="${p.serialNumber}">Select</button>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.partNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.serialNumber}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">${p.quantity}</td>
+                    </tr>`).join('');
+        }
+
+        // --------------- PENDING ITEM (qty modal) ---------------
+        let pendingItemToAdd = null;
+
+        elements.selectItemTable.addEventListener('click', (e) => {
+            const sn = e.target.closest('.add-to-sj-btn')?.dataset.serialNumber;
+            if (!sn) return;
+            pendingItemToAdd = state.products.find(x => x.serialNumber === sn);
+            if (pendingItemToAdd) {
+                elements.qtyModalTitle.textContent = `Set Quantity: ${pendingItemToAdd.partNumber}`;
+                elements.qtyModalMaxText.textContent = `Max available: ${pendingItemToAdd.quantity} units`;
+                elements.qtyInput.value = 1;
+                elements.qtyInput.max = pendingItemToAdd.quantity;
+                toggleModal(elements.selectItemModal, false);
+                toggleModal(elements.qtyInputModal, true);
+            }
+        });
+
+        elements.confirmQtyModalBtn.addEventListener('click', () => {
+            const qty = parseInt(elements.qtyInput.value, 10);
+            if (!pendingItemToAdd) return;
+            if (isNaN(qty) || qty < 1 || qty > pendingItemToAdd.quantity) {
+                alert(`Invalid quantity. Must be between 1 and ${pendingItemToAdd.quantity}.`);
+                return;
+            }
+            state.currentSuratJalan.items.push({ ...pendingItemToAdd, quantity: qty, remark: '' });
+            renderSuratJalanItems();
+            toggleModal(elements.qtyInputModal, false);
+            pendingItemToAdd = null;
+        });
+
+        // --------------- PRODUCT TABLE ACTIONS ---------------
+        elements.productTable.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const sn = btn.dataset.serialNumber;
+            const product = state.products.find(p => p.serialNumber === sn);
+
+            if (btn.classList.contains('details-product-btn') && product) {
+                elements.productDetailsTitle.textContent =
+                    `History: ${product.partNumber} (SN: ${sn}) | PO: ${product.preOrderNumber || '-'}`;
+
+                const history = state.suratJalanHistory.filter(trx =>
+                    trx.items.some(item => item.serialNumber === sn)
+                );
+                const totalKeluar = history.reduce((sum, trx) => {
+                    const found = trx.items.find(i => i.serialNumber === sn);
+                    return sum + (found ? parseInt(found.quantity, 10) : 0);
+                }, 0);
+
+                let tableHtml = `
+                    <tr class="bg-green-50/50">
+                        <td class="px-6 py-4 text-sm">${product.dateAdded?.split('T')[0] || '-'}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-green-700">INCOMING</td>
+                        <td class="px-6 py-4 text-sm">Initial Stock</td>
+                        <td class="px-6 py-4 text-sm">-</td>
+                        <td class="px-6 py-4 text-sm font-bold text-green-600 text-right">+${parseInt(product.quantity, 10) + totalKeluar}</td>
+                    </tr>`;
+                tableHtml += history.map(trx => {
+                    const matchItem = trx.items.find(i => i.serialNumber === sn);
+                    return `
+                        <tr class="bg-red-50/30 hover:bg-red-50/80 transition-colors">
+                            <td class="px-6 py-4 text-sm">${trx.requestDate || '-'}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${trx.sdrNo}</td>
+                            <td class="px-6 py-4 text-sm">${trx.projectName}</td>
+                            <td class="px-6 py-4 text-sm">${trx.picAtSite || trx.recipient}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-red-600 text-right">-${matchItem.quantity}</td>
+                        </tr>`;
+                }).join('');
+
+                elements.productDetailsTable.innerHTML = tableHtml;
+                toggleModal(elements.productDetailsModal, true);
+
+            } else if (btn.classList.contains('edit-product-btn') && product) {
+                const fieldMap = {
+                    serialNumber: 'editProductSerial',
+                    preOrderNumber: 'editPreOrderNumber',
+                    partNumber: 'editPartNumber',
+                    productCode: 'editProductCode',
+                    awb: 'editAwb',
+                    quantity: 'editQuantity',
+                    description: 'editDescription',
+                    category: 'editCategory',
+                    platform: 'editPlatform',
+                    location: 'editLocation',
+                };
+                Object.entries(fieldMap).forEach(([key, elId]) => {
+                    const el = document.getElementById(elId);
+                    if (el) el.value = product[key] ?? '';
+                });
+                toggleModal(elements.editProductModal, true);
+
+            } else if (btn.classList.contains('delete-product-btn')) {
+                if (confirm(`Hapus SN: ${sn}?`)) deleteProduct(sn);
+            }
+        });
+
+        // --------------- EDIT FORM SUBMIT ---------------
+        elements.editProductForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateProduct({
+                serialNumber: document.getElementById('editProductSerial').value,
+                preOrderNumber: document.getElementById('editPreOrderNumber').value,
+                partNumber: document.getElementById('editPartNumber').value,
+                productCode: document.getElementById('editProductCode').value,
+                awb: document.getElementById('editAwb').value,
+                description: document.getElementById('editDescription').value,
+                quantity: parseInt(document.getElementById('editQuantity').value, 10),
+                category: document.getElementById('editCategory').value,
+                platform: document.getElementById('editPlatform').value,
+                location: document.getElementById('editLocation').value,
+            });
+            toggleModal(elements.editProductModal, false);
+        });
+
+        // --------------- BULK ADD ---------------
+        elements.bulkAddBtn.addEventListener('click', () => toggleModal(elements.bulkAddModal, true));
+        document.getElementById('closeBulkModalBtn').addEventListener('click', () => toggleModal(elements.bulkAddModal, false));
+
+        document.getElementById('submitBulkModalBtn').addEventListener('click', async () => {
+            const csvFile = document.getElementById('csvFileInput').files[0];
+            if (!csvFile) { alert('Pilih file CSV!'); return; }
+            const formData = new FormData();
+            formData.append('csv_file', csvFile);
+            try {
+                // FIX: Use getCsrfToken() instead of a hidden form input that may not exist
+                const response = await fetch('/api/bulk-add/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCsrfToken() },
+                    body: formData,
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    toggleModal(elements.bulkAddModal, false);
+                    fetchProducts();
+                    showMessage('Success', result.message);
+                } else {
+                    showMessage('Error', result.message);
+                }
+            } catch (err) {
+                showMessage('Error', 'Upload gagal: ' + err.message);
+            }
+        });
+
+        // --------------- EXPORT CSV ---------------
+        elements.exportCsvBtn.addEventListener('click', () => {
+            const headers = ['preOrderNumber', 'partNumber', 'serialNumber', 'awb', 'productCode',
+                             'description', 'quantity', 'category', 'platform', 'location'];
+            const csv = [
+                headers.join(','),
+                ...state.products.map(p =>
+                    headers.map(h => `"${String(p[h] || '').replace(/"/g, '""')}"`).join(',')
+                ),
+            ].join('\n');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            link.download = 'LANCS_Inventory.csv';
+            link.click();
+        });
+
+        // --------------- MISC BUTTON LISTENERS ---------------
+        elements.tabButtons.forEach(btn =>
+            btn.addEventListener('click', (e) => switchTab(e.target.closest('.tab-btn').dataset.tab))
+        );
+        elements.addSingleBtn.addEventListener('click', handleSingleAdd);
+        elements.suratJalanForm.addEventListener('submit', handleFinalizeSuratJalan);
+        elements.addItemToSuratJalanBtn.addEventListener('click', () => {
+            renderSelectItemTable();
+            toggleModal(elements.selectItemModal, true);
+        });
+
+        // Debounced search listeners (no more instant re-render on every keystroke)
+        elements.productListSearch.addEventListener('input', debouncedRenderProductList);
+        elements.categoryFilter.addEventListener('change', () => { state.currentPage = 1; renderProductList(); });
+        elements.selectItemSearch.addEventListener('input', debouncedRenderSelectItem);
+        elements.suratJalanHistorySearch.addEventListener('input', debouncedRenderSuratJalan);
+        elements.activityHistorySearch.addEventListener('input', debouncedRenderActivityHistory);
+
+        elements.closeEditModalBtn.addEventListener('click', () => toggleModal(elements.editProductModal, false));
+        elements.closeEditModalTop.addEventListener('click', () => toggleModal(elements.editProductModal, false));
+        elements.closeProductDetailsBtn.addEventListener('click', () => toggleModal(elements.productDetailsModal, false));
+        elements.closeSelectItemModalBtn.addEventListener('click', () => toggleModal(elements.selectItemModal, false));
+        elements.closeQtyModalBtn.addEventListener('click', () => {
+            toggleModal(elements.qtyInputModal, false);
+            toggleModal(elements.selectItemModal, true);
+        });
+        elements.scanProductBtn.addEventListener('click', () => toggleModal(elements.qrScannerModal, true));
+        elements.closeQrScannerModal.addEventListener('click', () => toggleModal(elements.qrScannerModal, false));
+
+        // Uppercase all inputs marked with .uppercase-input
+        document.querySelectorAll('.uppercase-input').forEach(input =>
+            input.addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); })
+        );
+
+        // --------------- DASHBOARD STATS ---------------
+        function updateDashboardStats() {
+            const total     = state.products.length;
+            const totalQty  = state.products.reduce((s, p) => s + (parseInt(p.quantity) || 0), 0);
+            const lowStock  = state.products.filter(p => parseInt(p.quantity) > 0 && parseInt(p.quantity) < 5).length;
+            const outStock  = state.products.filter(p => parseInt(p.quantity) <= 0).length;
+
+            const animate = (el, val) => {
+                if (!el) return;
+                el.classList.remove('stat-loading');
+                el.textContent = val.toLocaleString();
+            };
+            animate(document.getElementById('statTotalSKUs'),    total);
+            animate(document.getElementById('statTotalQty'),     totalQty);
+            animate(document.getElementById('statLowStock'),     lowStock);
+            animate(document.getElementById('statOutOfStock'),   outStock);
+        }
+
+        // --------------- INIT ---------------
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+            fetchTransactions();
+            fetchActivityLogs();
+            switchTab('products');
+        });
+
+        // ============================================================
+        // STOCK MOVEMENT HISTORY
+        // ============================================================
+
+        const SM_TYPE_CONFIG = {
+            IN:     { label: 'Stock In',    textColor: 'text-green-700', bgColor: 'bg-green-100' },
+            OUT:    { label: 'Stock Out',   textColor: 'text-red-700',   bgColor: 'bg-red-100'   },
+            ADJUST: { label: 'Adjustment',  textColor: 'text-amber-700', bgColor: 'bg-amber-100' },
+        };
+
+        function smTypeBadge(type) {
+            const c = SM_TYPE_CONFIG[type] || { label: type, textColor: 'text-gray-700', bgColor: 'bg-gray-100' };
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${c.bgColor} ${c.textColor}">${c.label}</span>`;
+        }
+
+        function smFmtQty(type, qty) {
+            if (type === 'IN')     return `<span class="font-bold text-green-600">+${qty}</span>`;
+            if (type === 'OUT')    return `<span class="font-bold text-red-600">-${qty}</span>`;
+            const sign = qty >= 0 ? '+' : '';
+            return `<span class="font-bold text-amber-600">${sign}${qty}</span>`;
+        }
+
+        async function loadStockMovements() {
+            const serial   = document.getElementById('smFilterSerial').value.trim();
+            const type     = document.getElementById('smFilterType').value;
+            const dateFrom = document.getElementById('smFilterDate').value;
+            const tbody    = document.getElementById('smTableBody');
+            const cards    = document.getElementById('smSummaryCards');
+
+            tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">Loading…</td></tr>`;
+            cards.classList.add('hidden');
+
+            // Per-product summary endpoint when serial is provided
+            if (serial) {
+                try {
+                    const res  = await fetch(`/api/stock-movements/${encodeURIComponent(serial)}/`);
+                    const json = await res.json();
+
+                    if (json.error || json.detail) {
+                        tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">${json.error || json.detail}</td></tr>`;
+                        return;
+                    }
+
+                    document.getElementById('smTotalIn').textContent     = json.summary.total_in;
+                    document.getElementById('smTotalOut').textContent    = json.summary.total_out;
+                    document.getElementById('smTotalAdjust').textContent = json.summary.total_adjust;
+                    document.getElementById('smCurrentQty').textContent  = json.product.current_qty;
+                    cards.classList.remove('hidden');
+
+                    smRenderRows(json.history, tbody, dateFrom, type);
+                    document.getElementById('smRecordCount').textContent =
+                        `Showing ${json.history.length} movement(s) for ${json.product.part_number} (${serial})`;
+                } catch (err) {
+                    tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">Error: ${err.message}</td></tr>`;
+                }
+                return;
+            }
+
+            // General endpoint
+            const params = new URLSearchParams({ limit: 500 });
+            if (type) params.set('type', type);
+
+            try {
+                const res  = await fetch(`/api/stock-movements/?${params}`);
+                const data = await res.json();
+                smRenderRows(data, tbody, dateFrom, '');
+                document.getElementById('smRecordCount').textContent = `Showing ${data.length} movement(s)`;
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function smRenderRows(movements, tbody, dateFrom, typeFilter) {
+            let rows = movements;
+            if (dateFrom)   rows = rows.filter(m => m.timestamp >= dateFrom);
+            if (typeFilter) rows = rows.filter(m => m.movement_type === typeFilter);
+
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">No movements found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(m => `
+                <tr class="hover:bg-gray-50 transition-colors ${m.is_rolled_back ? 'opacity-50' : ''}">
+                    <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${m.timestamp}</td>
+                    <td class="px-4 py-3 text-sm font-mono text-gray-800">${m.serial_number}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${m.part_number}</td>
+                    <td class="px-4 py-3">${smTypeBadge(m.movement_type)}${m.is_rolled_back ? ' <span class="text-xs text-gray-400 italic">rolled back</span>' : ''}</td>
+                    <td class="px-4 py-3 text-right">${smFmtQty(m.movement_type, m.quantity)}</td>
+                    <td class="px-4 py-3 text-right text-sm text-gray-400">${m.qty_before}</td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-gray-700">${m.qty_after}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500">${m.reference || '—'}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 max-w-[160px] truncate" title="${m.note || ''}">${m.note || '—'}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500">${m.performed_by}</td>
+                    <td class="px-4 py-3 text-center">
+                        ${m.is_rolled_back || m.movement_type === 'ROLLBACK'
+                            ? '<span class="text-xs text-gray-300">—</span>'
+                            : `<button class="rollback-mvt-btn text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition"
+                                data-id="${m.id}"
+                                data-label="${m.movement_type} | ${m.serial_number}"
+                                title="Rollback this movement">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                               </button>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function clearSMFilters() {
+            document.getElementById('smFilterSerial').value = '';
+            document.getElementById('smFilterType').value   = '';
+            document.getElementById('smFilterDate').value   = '';
+            document.getElementById('smSummaryCards').classList.add('hidden');
+            document.getElementById('smTableBody').innerHTML =
+                `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">Use the filters above and click Search to load movements.</td></tr>`;
+            document.getElementById('smRecordCount').textContent = '';
+        }
+
+        async function submitAdjustment() {
+            const serial = document.getElementById('adjSerial').value.trim();
+            const delta  = document.getElementById('adjDelta').value.trim();
+            const note   = document.getElementById('adjNote').value.trim();
+            const fb     = document.getElementById('adjFeedback');
+
+            if (!serial || !delta || !note) {
+                fb.className = 'text-sm font-medium text-red-600';
+                fb.textContent = '⚠ Please fill in all three fields.';
+                return;
+            }
+
+            fb.className = 'text-sm font-medium text-gray-500';
+            fb.textContent = 'Submitting…';
+
+            try {
+                const res  = await fetch('/api/stock-adjust/', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body:    JSON.stringify({ serialNumber: serial, adjustment: parseInt(delta, 10), note }),
+                });
+                const json = await res.json();
+
+                if (json.status === 'success') {
+                    fb.className = 'text-sm font-medium text-green-600';
+                    fb.textContent = `✅ ${json.message}`;
+                    document.getElementById('adjSerial').value = '';
+                    document.getElementById('adjDelta').value  = '';
+                    document.getElementById('adjNote').value   = '';
+                    fetchProducts();          // refresh product list stock counts
+                    loadStockMovements();     // refresh movement table
+                } else {
+                    fb.className = 'text-sm font-medium text-red-600';
+                    fb.textContent = `❌ ${json.message}`;
+                }
+            } catch (err) {
+                fb.className = 'text-sm font-medium text-red-600';
+                fb.textContent = `❌ Network error: ${err.message}`;
+            }
+        }
+
+        // ============================================================
+        // EDIT SURAT JALAN
+        // ============================================================
+
+        // State for the edit modal
+        let editSjData = null;   // the full SJ object being edited
+
+        // Wire up Edit button clicks via delegation on the history table
+        elements.suratJalanHistoryTable.addEventListener('click', (e) => {
+            const btn = e.target.closest('.edit-sj-btn');
+            if (!btn) return;
+            const sdrNo = btn.dataset.sdr;
+            const sj    = state.suratJalanHistory.find(x => x.sdrNo === sdrNo);
+            if (sj) openEditSjModal(sj);
+        });
+
+        function openEditSjModal(sj) {
+            editSjData = JSON.parse(JSON.stringify(sj));   // deep copy so we don't mutate state
+
+            // Fill header fields
+            document.getElementById('editSjSdrNo').value        = sj.sdrNo;
+            document.getElementById('editSjRequestDate').value  = sj.requestDate  || '';
+            document.getElementById('editSjProjectName').value  = sj.projectName  || '';
+            document.getElementById('editSjRequestor').value    = sj.requestor    || '';
+            document.getElementById('editSjRecipient').value    = sj.recipient    || '';
+            document.getElementById('editSjTelephone').value    = sj.telephone    || '';
+            document.getElementById('editSjSiteName').value     = sj.siteName     || '';
+            document.getElementById('editSjSubsystem').value    = sj.subsystem    || '';
+            document.getElementById('editSjPicAtSite').value    = sj.picAtSite    || '';
+            document.getElementById('editSjPicMobile').value    = sj.picMobile    || '';
+            document.getElementById('editSjTransportMode').value = sj.transportMode || '';
+            document.getElementById('editSjAddress').value      = sj.address      || '';
+
+            renderEditSjItems();
+            toggleModal(document.getElementById('editSjModal'), true);
+        }
+
+        function renderEditSjItems() {
+            const tbody = document.getElementById('editSjItemsTable');
+            if (!editSjData.items.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">No items. Add one below.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = editSjData.items.map((item, i) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.partNumber}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500 font-mono">${item.serialNumber}</td>
+                    <td class="px-4 py-3">
+                        <input type="number" min="1" value="${item.quantity}"
+                            class="w-20 rounded border-gray-300 text-sm py-1 px-2 border text-center"
+                            onchange="editSjData.items[${i}].quantity = parseInt(this.value) || 1">
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="removeEditSjItem(${i})"
+                            class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function removeEditSjItem(index) {
+            editSjData.items.splice(index, 1);
+            renderEditSjItems();
+        }
+
+        // Add item from existing products
+        function renderEditSjAddItem() {
+            const term  = document.getElementById('editSjItemSearch').value.toLowerCase();
+            const tbody = document.getElementById('editSjAddItemTable');
+            const avail = state.products.filter(p =>
+                p.quantity > 0 &&
+                (p.partNumber.toLowerCase().includes(term) || p.serialNumber.toLowerCase().includes(term))
+            );
+            tbody.innerHTML = avail.length === 0
+                ? `<tr><td colspan="3" class="px-4 py-4 text-center text-sm text-gray-400">No available products found.</td></tr>`
+                : avail.map(p => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">${p.partNumber}</td>
+                        <td class="px-4 py-3 text-sm font-mono text-gray-500">${p.serialNumber}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="addEditSjItem('${p.serialNumber}')"
+                                class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">
+                                + Add
+                            </button>
+                        </td>
+                    </tr>`).join('');
+        }
+
+        function addEditSjItem(serialNumber) {
+            const product = state.products.find(p => p.serialNumber === serialNumber);
+            if (!product) return;
+            const existing = editSjData.items.find(i => i.serialNumber === serialNumber);
+            if (existing) {
+                existing.quantity = Math.min(existing.quantity + 1, product.quantity);
+            } else {
+                editSjData.items.push({
+                    partNumber:   product.partNumber,
+                    serialNumber: product.serialNumber,
+                    quantity:     1,
+                    description:  product.description,
+                });
+            }
+            renderEditSjItems();
+        }
+
+        async function saveEditSj() {
+            const feedback = document.getElementById('editSjFeedback');
+            feedback.textContent = '';
+
+            const payload = {
+                sdrNo:         document.getElementById('editSjSdrNo').value.trim(),
+                requestDate:   document.getElementById('editSjRequestDate').value,
+                projectName:   document.getElementById('editSjProjectName').value.trim(),
+                requestor:     document.getElementById('editSjRequestor').value.trim(),
+                recipient:     document.getElementById('editSjRecipient').value.trim(),
+                telephone:     document.getElementById('editSjTelephone').value.trim(),
+                siteName:      document.getElementById('editSjSiteName').value.trim(),
+                subsystem:     document.getElementById('editSjSubsystem').value.trim(),
+                picAtSite:     document.getElementById('editSjPicAtSite').value.trim(),
+                picMobile:     document.getElementById('editSjPicMobile').value.trim(),
+                transportMode: document.getElementById('editSjTransportMode').value.trim(),
+                address:       document.getElementById('editSjAddress').value.trim(),
+                items:         editSjData.items,
+            };
+
+            if (!payload.sdrNo) {
+                feedback.className = 'text-sm font-medium text-red-600 mt-3';
+                feedback.textContent = '⚠ SDR No wajib diisi.';
+                return;
+            }
+            if (!payload.items.length) {
+                feedback.className = 'text-sm font-medium text-red-600 mt-3';
+                feedback.textContent = '⚠ Minimal satu item harus ada.';
+                return;
+            }
+
+            feedback.className = 'text-sm font-medium text-gray-400 mt-3';
+            feedback.textContent = 'Menyimpan…';
+
+            try {
+                const res  = await fetch('/api/edit-transaction/', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body:    JSON.stringify(payload),
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    toggleModal(document.getElementById('editSjModal'), false);
+                    showMessage('Success', json.message);
+                    fetchProducts();
+                    fetchTransactions();
+                } else {
+                    feedback.className = 'text-sm font-medium text-red-600 mt-3';
+                    feedback.textContent = `❌ ${json.message}`;
+                }
+            } catch (err) {
+                feedback.className = 'text-sm font-medium text-red-600 mt-3';
+                feedback.textContent = `❌ Network error: ${err.message}`;
+            }
+        }
+
+        document.getElementById('editSjItemSearch')
+            ?.addEventListener('input', debounce(renderEditSjAddItem, 180));
+
+        // ============================================================
+        // ROLLBACK
+        // ============================================================
+
+        // ── Rollback confirmation modal ──────────────────────────────
+        function showRollbackConfirm({ title, description, onConfirm }) {
+            const modal = document.getElementById('rollbackConfirmModal');
+            document.getElementById('rollbackConfirmTitle').textContent       = title;
+            document.getElementById('rollbackConfirmDescription').textContent = description;
+            document.getElementById('rollbackNoteInput').value                = '';
+            document.getElementById('rollbackConfirmFeedback').textContent    = '';
+            toggleModal(modal, true);
+
+            // Wire confirm button (replace listener each time)
+            const btn = document.getElementById('rollbackConfirmBtn');
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', async () => {
+                const note = document.getElementById('rollbackNoteInput').value.trim();
+                const fb   = document.getElementById('rollbackConfirmFeedback');
+                fb.className = 'text-sm text-gray-400 mt-2';
+                fb.textContent = 'Processing…';
+                newBtn.disabled = true;
+                try {
+                    await onConfirm(note);
+                    toggleModal(modal, false);
+                } catch (err) {
+                    fb.className   = 'text-sm text-red-600 mt-2';
+                    fb.textContent = `❌ ${err.message}`;
+                    newBtn.disabled = false;
+                }
+            });
+        }
+
+        document.getElementById('rollbackConfirmCancelBtn')
+            ?.addEventListener('click', () =>
+                toggleModal(document.getElementById('rollbackConfirmModal'), false)
+            );
+
+        // ── Rollback a whole Surat Jalan ─────────────────────────────
+        elements.suratJalanHistoryTable.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.rollback-sj-btn');
+            if (!btn) return;
+            const sdrNo = btn.dataset.sdr;
+            showRollbackConfirm({
+                title:       `Rollback Surat Jalan ${sdrNo}`,
+                description: `This will return ALL items from Surat Jalan ${sdrNo} back to stock. This cannot be undone.`,
+                onConfirm:   async (note) => {
+                    const res  = await fetch(`/api/rollback-transaction/${encodeURIComponent(sdrNo)}/`, {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body:    JSON.stringify({ note }),
+                    });
+                    const json = await res.json();
+                    if (json.status !== 'success') throw new Error(json.message);
+                    showMessage('Rollback Successful', json.message);
+                    fetchProducts();
+                    fetchTransactions();
+                },
+            });
+        });
+
+        // ── Rollback a single movement entry ─────────────────────────
+        // Delegated on the stock movements table body
+        document.getElementById('smTableBody')?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.rollback-mvt-btn');
+            if (!btn) return;
+            const mvtId = btn.dataset.id;
+            const label = btn.dataset.label || `Movement #${mvtId}`;
+            showRollbackConfirm({
+                title:       `Rollback ${label}`,
+                description: `This will reverse movement #${mvtId} and create a compensating entry in the history.`,
+                onConfirm:   async (note) => {
+                    const res  = await fetch(`/api/rollback-movement/${mvtId}/`, {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                        body:    JSON.stringify({ note }),
+                    });
+                    const json = await res.json();
+                    if (json.status !== 'success') throw new Error(json.message);
+                    showMessage('Rollback Successful', json.message);
+                    fetchProducts();
+                    loadStockMovements();
+                },
+            });
+        });
+
+    </script>
+    <!-- ===== EDIT SURAT JALAN MODAL ===== -->
+    <div id="editSjModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-4xl mx-auto z-50 relative border border-gray-100 flex flex-col max-h-[92vh]">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Edit Surat Jalan</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Stock quantities will be automatically corrected on save.</p>
+                </div>
+                <button onclick="toggleModal(document.getElementById('editSjModal'), false)"
+                    class="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1.5 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Scrollable body -->
+            <div class="overflow-y-auto flex-1 p-6 space-y-6">
+
+                <!-- Info fields -->
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Document Info</h4>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">SDR No. <span class="text-red-500">*</span></label>
+                            <input id="editSjSdrNo" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Request Date</label>
+                            <input id="editSjRequestDate" type="date" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Project Name</label>
+                            <input id="editSjProjectName" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Requestor</label>
+                            <input id="editSjRequestor" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Recipient</label>
+                            <input id="editSjRecipient" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Telephone</label>
+                            <input id="editSjTelephone" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Site Name</label>
+                            <input id="editSjSiteName" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Subsystem</label>
+                            <input id="editSjSubsystem" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">PIC at Site</label>
+                            <input id="editSjPicAtSite" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">PIC Mobile</label>
+                            <input id="editSjPicMobile" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Transport Mode</label>
+                            <input id="editSjTransportMode" type="text" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input">
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                            <textarea id="editSjAddress" rows="2" class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border uppercase-input"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current items -->
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Items</h4>
+                    <div class="rounded-lg border border-gray-200 overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Part No</th>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Serial No</th>
+                                    <th class="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                    <th class="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase">Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editSjItemsTable" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Add item picker -->
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Add Item from Inventory</h4>
+                    <div class="relative mb-3">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input id="editSjItemSearch" type="text" placeholder="Search by Part No or Serial No..."
+                            class="pl-9 block w-full rounded-lg border-gray-300 bg-gray-50 text-sm py-2 px-3 border uppercase-input"
+                            onfocus="renderEditSjAddItem()">
+                    </div>
+                    <div class="rounded-lg border border-gray-200 overflow-hidden max-h-48 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Part No</th>
+                                    <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Serial No</th>
+                                    <th class="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase">Add</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editSjAddItemTable" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="3" class="px-4 py-4 text-center text-sm text-gray-400">Type to search inventory.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-100 flex-shrink-0 flex items-center justify-between">
+                <p id="editSjFeedback" class="text-sm font-medium"></p>
+                <div class="flex gap-3">
+                    <button onclick="toggleModal(document.getElementById('editSjModal'), false)"
+                        class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg hover:bg-gray-50 text-sm">
+                        Cancel
+                    </button>
+                    <button onclick="saveEditSj()"
+                        class="btn bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 shadow-sm text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ROLLBACK CONFIRM MODAL ===== -->
+    <div id="rollbackConfirmModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="modal-content bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto z-50 relative border border-gray-100">
+            <div class="p-6">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 id="rollbackConfirmTitle" class="text-lg font-bold text-gray-900"></h3>
+                        <p id="rollbackConfirmDescription" class="text-sm text-gray-500 mt-1"></p>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reason for rollback <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input id="rollbackNoteInput" type="text" placeholder="e.g. Wrong quantity entered, item returned..."
+                        class="block w-full rounded-md border-gray-300 text-sm py-2 px-3 border">
+                </div>
+                <p id="rollbackConfirmFeedback" class="text-sm mt-2"></p>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button id="rollbackConfirmCancelBtn"
+                        class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg hover:bg-gray-50 text-sm">
+                        Cancel
+                    </button>
+                    <button id="rollbackConfirmBtn"
+                        class="btn bg-red-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-700 shadow-sm text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        Confirm Rollback
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
