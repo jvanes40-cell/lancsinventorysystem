@@ -559,8 +559,19 @@ def add_transaction(request):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
+# ---------------------------------------------------------------------------
+# CRITICAL FIX (#2 in review): edit_transaction previously only had
+# @login_required, allowing ANY authenticated user (including Manager-role
+# accounts, which are meant to be view + export PDF only) to edit a Surat
+# Jalan and trigger stock corrections via ADJUST movements.
+#
+# This view mutates Product.quantity and creates StockMovement rows, so it
+# is now gated the same way as add_transaction / adjust_stock: staff only
+# (superusers always pass via role_required).
+# ---------------------------------------------------------------------------
 @csrf_exempt
 @login_required
+@staff_required
 def edit_transaction(request):
     """
     Full edit of a Surat Jalan.
@@ -763,8 +774,17 @@ def bulk_add_products(request):
     return JsonResponse({'status': 'error', 'message': 'Permintaan tidak valid.'})
 
 
+# ---------------------------------------------------------------------------
+# CRITICAL FIX (#3 in review): rollback_transaction previously only had
+# @login_required, allowing ANY authenticated user (including Manager-role
+# accounts) to roll back a Surat Jalan and modify stock quantities.
+#
+# Now gated with @staff_required, consistent with add_transaction,
+# adjust_stock, and edit_transaction.
+# ---------------------------------------------------------------------------
 @csrf_exempt
 @login_required
+@staff_required
 def rollback_transaction(request, sdr_no):
     """
     Rolls back an entire Surat Jalan:
@@ -850,8 +870,18 @@ def rollback_transaction(request, sdr_no):
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
+# ---------------------------------------------------------------------------
+# CRITICAL FIX (#3 in review): rollback_movement previously only had
+# @login_required, allowing ANY authenticated user (including Manager-role
+# accounts) to roll back an individual stock movement and modify stock
+# quantities directly.
+#
+# Now gated with @staff_required, consistent with the other stock-mutating
+# views.
+# ---------------------------------------------------------------------------
 @csrf_exempt
 @login_required
+@staff_required
 def rollback_movement(request, movement_id):
     """
     Rolls back a single StockMovement entry:
