@@ -929,8 +929,8 @@
         // <form> hidden input (which may not exist on every page).
         // ===========================================================
         function getCsrfToken() {
-            const match = document.cookie.match(/csrftoken=([^;]+)/);
-            return match ? match[1] : '';
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
         }
 
         // --------------- STATE ---------------
@@ -1254,7 +1254,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                             <button class="details-product-btn text-indigo-600 hover:text-indigo-900" data-serial-number="${product.serialNumber}">History</button>
                             <button class="edit-product-btn text-blue-600 hover:text-blue-900" data-serial-number="${product.serialNumber}">Edit</button>
-                            <button class="delete-product-btn text-red-600 hover:text-red-900" data-serial-number="${product.serialNumber}">Del</button>
+                            ${CAN_DELETE_STOCK ? `<button class="delete-product-btn text-red-600 hover:text-red-900" data-serial-number="${product.serialNumber}">Del</button>` : ''}
                         </td>
                     </tr>`;
                 }).join('');
@@ -2028,9 +2028,11 @@
         async function saveEditSj() {
             const feedback = document.getElementById('editSjFeedback');
             feedback.textContent = '';
+            const newSdrNoValue = document.getElementById('editSjSdrNo').value.trim();
 
             const payload = {
-                sdrNo:         document.getElementById('editSjSdrNo').value.trim(),
+                sdrNo:         editSjData.originalSdrNo,
+                newSdrNo:      newSdrNoValue,
                 requestDate:   document.getElementById('editSjRequestDate').value,
                 projectName:   document.getElementById('editSjProjectName').value.trim(),
                 requestor:     document.getElementById('editSjRequestor').value.trim(),
@@ -2045,7 +2047,7 @@
                 items:         editSjData.items,
             };
 
-            if (!payload.sdrNo) {
+            if (!payload.newSdrNo) {
                 feedback.className = 'text-sm font-medium text-red-600 mt-3';
                 feedback.textContent = '⚠ SDR No wajib diisi.';
                 return;
