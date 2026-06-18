@@ -1,24 +1,37 @@
 """
 Django settings for inventory_system project.
+Production configuration for Windows Mini PC (Local LAN deployment).
 """
 from pathlib import Path
 import os
-import dj_database_url
+from decouple import config, Csv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# ---------------------------------------------------------------------------
+# BASE
+# ---------------------------------------------------------------------------
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-your-default-key-here')
+# Loaded from .env — must be 50+ random characters
+SECRET_KEY = config('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+# Always False in production
+DEBUG = False
 
-# Allow all hosts so Railway can connect
-ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
+# Your mini PC's local IP + localhost
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
-# Application definition
+# HTTP only — no HTTPS on local LAN
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost,http://127.0.0.1',
+    cast=Csv()
+)
+
+# ---------------------------------------------------------------------------
+# APPLICATIONS
+# ---------------------------------------------------------------------------
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -26,13 +39,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Your custom apps:
     'gudang',
 ]
 
+# ---------------------------------------------------------------------------
+# MIDDLEWARE
+# ---------------------------------------------------------------------------
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise for Cloud static files
+    'django.middleware.gzip.GZipMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -41,12 +58,21 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ---------------------------------------------------------------------------
+# URLS & WSGI
+# ---------------------------------------------------------------------------
+
 ROOT_URLCONF = 'inventory_system.urls'
+WSGI_APPLICATION = 'inventory_system.wsgi.application'
+
+# ---------------------------------------------------------------------------
+# TEMPLATES
+# ---------------------------------------------------------------------------
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Maps to your templates folder
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -59,64 +85,68 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'inventory_system.wsgi.application'
+# ---------------------------------------------------------------------------
+# DATABASE — SQLite (upgrade to PostgreSQL later when ready)
+# ---------------------------------------------------------------------------
 
-# Database configuration using dj_database_url for Cloud
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
-# Password validation
+# ---------------------------------------------------------------------------
+# PASSWORD VALIDATION
+# ---------------------------------------------------------------------------
+
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Asia/Jakarta'
-USE_I18N = True
-USE_TZ = True
+# ---------------------------------------------------------------------------
+# INTERNATIONALISATION
+# ---------------------------------------------------------------------------
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE     = 'Asia/Jakarta'
+USE_I18N      = True
+USE_TZ        = True
+
+# ---------------------------------------------------------------------------
+# STATIC FILES
+# ---------------------------------------------------------------------------
+
+STATIC_URL  = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# WhiteNoise storage configuration
 STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
 
-# Default primary key field type
+# ---------------------------------------------------------------------------
+# DEFAULT PRIMARY KEY
+# ---------------------------------------------------------------------------
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/'
+# ---------------------------------------------------------------------------
+# AUTH REDIRECTS
+# ---------------------------------------------------------------------------
+
+LOGIN_REDIRECT_URL  = '/'
 LOGOUT_REDIRECT_URL = '/login/'
-LOGIN_URL = '/login/'
+LOGIN_URL           = '/login/'
 
 # ---------------------------------------------------------------------------
-# PERFORMANCE
+# CACHE — in-memory, sufficient for local LAN
 # ---------------------------------------------------------------------------
 
-# In-memory cache for development; swap for Redis in production:
-#   pip install django-redis
-#   CACHES = { 'default': { 'BACKEND': 'django_redis.cache.RedisCache',
-#              'LOCATION': os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/1') } }
 CACHES = {
     'default': {
         'BACKEND':  'django.core.cache.backends.locmem.LocMemCache',
@@ -124,16 +154,77 @@ CACHES = {
     }
 }
 
-# Session stored in the DB; switch to cache-backed sessions if Redis is added:
-#   SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# ---------------------------------------------------------------------------
+# SESSIONS
+# ---------------------------------------------------------------------------
 
-# Gzip responses automatically (already handled by WhiteNoise for static files,
-# but this covers dynamic API responses too).
-if 'django.middleware.gzip.GZipMiddleware' not in MIDDLEWARE:
-    MIDDLEWARE.insert(1, 'django.middleware.gzip.GZipMiddleware')
+SESSION_ENGINE     = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 28800   # 8 hours — one warehouse shift
 
-# Security hardening (safe to enable even in development)
+# No HTTPS on LAN — these must stay False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE    = False
+
+# ---------------------------------------------------------------------------
+# SECURITY HARDENING
+# ---------------------------------------------------------------------------
+
 SECURE_BROWSER_XSS_FILTER   = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS             = 'DENY'
+
+# Silence HTTPS warnings — intentional, this is a private HTTP-only LAN deployment.
+# Re-enable all of these if you ever add SSL/HTTPS in the future.
+SILENCED_SYSTEM_CHECKS = [
+    'security.W004',   # HSTS — no HTTPS on LAN
+    'security.W008',   # SSL redirect — HTTP only on LAN
+    'security.W012',   # SESSION_COOKIE_SECURE — no HTTPS on LAN
+    'security.W016',   # CSRF_COOKIE_SECURE — no HTTPS on LAN
+]
+
+# Future HTTPS upgrade checklist (uncomment when you add SSL):
+#   SECURE_SSL_REDIRECT            = True
+#   SECURE_HSTS_SECONDS            = 31536000
+#   SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#   SESSION_COOKIE_SECURE          = True
+#   CSRF_COOKIE_SECURE             = True
+#   SILENCED_SYSTEM_CHECKS         = []
+
+# ---------------------------------------------------------------------------
+# LOGGING — errors written to logs/lancs_errors.log
+# ---------------------------------------------------------------------------
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'lancs_errors.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'WARNING',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['file', 'console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
