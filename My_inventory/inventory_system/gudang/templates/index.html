@@ -1939,7 +1939,7 @@
 
         function openEditSjModal(sj) {
             editSjData = JSON.parse(JSON.stringify(sj));   // deep copy so we don't mutate state
-
+            editSjData.originalSdrNo = sj.sdrNo;
             // Fill header fields
             document.getElementById('editSjSdrNo').value        = sj.sdrNo;
             document.getElementById('editSjRequestDate').value  = sj.requestDate  || '';
