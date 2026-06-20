@@ -188,6 +188,8 @@ def get_stock_movements(request):
             'note':           m.note,
             'performed_by':   m.performed_by.username if m.performed_by else 'System',
             'timestamp':      m.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'serial_number':  m.product.serial_number,   # ← ADD THIS
+            'part_number':    m.product.part_number,     # ← ADD THIS
         }
         for m in qs
     ]
@@ -206,6 +208,9 @@ def get_product_movement_summary(request, serial_number):
 
     history = [
         {
+            'id':             m.id,
+            'serial_number':  m.product.serial_number,   # ← FIX: was missing
+            'part_number':    m.product.part_number,     # ← FIX: was missing
             'movement_type':  m.movement_type,
             'movement_label': m.get_movement_type_display(),
             'quantity':       m.quantity,
@@ -213,6 +218,7 @@ def get_product_movement_summary(request, serial_number):
             'qty_after':      m.qty_after,
             'reference':      m.reference,
             'note':           m.note,
+            'is_rolled_back': getattr(m, 'is_rolled_back', False),  # ← FIX: needed for undo button
             'performed_by':   m.performed_by.username if m.performed_by else 'System',
             'timestamp':      m.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
         }
