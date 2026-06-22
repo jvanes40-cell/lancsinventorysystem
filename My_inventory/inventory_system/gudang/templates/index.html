@@ -1769,6 +1769,7 @@
             IN:     { label: 'Stock In',    textColor: 'text-green-700', bgColor: 'bg-green-100' },
             OUT:    { label: 'Stock Out',   textColor: 'text-red-700',   bgColor: 'bg-red-100'   },
             ADJUST: { label: 'Adjustment',  textColor: 'text-amber-700', bgColor: 'bg-amber-100' },
+            ROLLBACK: { label: 'Rollback',   textColor: 'text-purple-700', bgColor: 'bg-purple-100' },
         };
 
         function smTypeBadge(type) {
@@ -2107,39 +2108,33 @@
         }
 
         function closeRollbackModal() {
-            const modal = document.getElementById('rollbackConfirmModal');
-            modal.classList.add('invisible');
+            document.getElementById('rollbackConfirmModal').classList.add('invisible');
             document.getElementById('rollbackConfirmFeedback').textContent = '';
             document.getElementById('rollbackNoteInput').value             = '';
             document.getElementById('rollbackConfirmBtn').disabled         = false;
             _rollbackConfirmHandler = null;
         }
 
-        // Cancel button
+        // Cancel button — ONE listener only
         document.getElementById('rollbackConfirmCancelBtn')
             .addEventListener('click', closeRollbackModal);
 
-        // Close when clicking dark overlay
+        // Click dark overlay to close
         document.getElementById('rollbackConfirmModal')
             .addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal-overlay')) {
-                    closeRollbackModal();
-                }
+                if (e.target.classList.contains('modal-overlay')) closeRollbackModal();
             });
 
         // Confirm button
         document.getElementById('rollbackConfirmBtn')
             .addEventListener('click', async () => {
                 if (!_rollbackConfirmHandler) return;
-
-                const note  = document.getElementById('rollbackNoteInput').value.trim();
-                const fb    = document.getElementById('rollbackConfirmFeedback');
-                const btn   = document.getElementById('rollbackConfirmBtn');
-
+                const note = document.getElementById('rollbackNoteInput').value.trim();
+                const fb   = document.getElementById('rollbackConfirmFeedback');
+                const btn  = document.getElementById('rollbackConfirmBtn');
                 fb.className   = 'text-sm text-gray-400 mt-2';
                 fb.textContent = 'Processing…';
                 btn.disabled   = true;
-
                 try {
                     await _rollbackConfirmHandler(note);
                     closeRollbackModal();
@@ -2149,15 +2144,6 @@
                     btn.disabled   = false;
                 }
             });
-
-// Cancel button — single permanent listener
-document.getElementById('rollbackConfirmCancelBtn')
-    ?.addEventListener('click', () => {
-        toggleModal(document.getElementById('rollbackConfirmModal'), false);
-        // Reset feedback and note input when cancelled
-        document.getElementById('rollbackConfirmFeedback').textContent = '';
-        document.getElementById('rollbackNoteInput').value = '';
-    });
 
         // ── Rollback a whole Surat Jalan ─────────────────────────────
         elements.suratJalanHistoryTable.addEventListener('click', async (e) => {
