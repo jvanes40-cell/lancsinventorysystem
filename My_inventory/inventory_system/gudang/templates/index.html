@@ -2139,11 +2139,10 @@
 // Cancel button — single permanent listener
 document.getElementById('rollbackConfirmCancelBtn')
     ?.addEventListener('click', () => {
-        _rollbackConfirmHandler = null;
+        toggleModal(document.getElementById('rollbackConfirmModal'), false);
+        // Reset feedback and note input when cancelled
         document.getElementById('rollbackConfirmFeedback').textContent = '';
         document.getElementById('rollbackNoteInput').value = '';
-        document.getElementById('rollbackConfirmBtn').disabled = false;
-        toggleModal(document.getElementById('rollbackConfirmModal'), false);
     });
 
         // ── Rollback a whole Surat Jalan ─────────────────────────────
