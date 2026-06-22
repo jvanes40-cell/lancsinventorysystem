@@ -2092,40 +2092,59 @@
         // ROLLBACK
         // ============================================================
 
-        // ── Rollback confirmation modal ──────────────────────────────
-        function showRollbackConfirm({ title, description, onConfirm }) {
-            const modal = document.getElementById('rollbackConfirmModal');
-            document.getElementById('rollbackConfirmTitle').textContent       = title;
-            document.getElementById('rollbackConfirmDescription').textContent = description;
-            document.getElementById('rollbackNoteInput').value                = '';
-            document.getElementById('rollbackConfirmFeedback').textContent    = '';
-            toggleModal(modal, true);
+        // Store the current rollback handler so we can swap it each time
+    let _rollbackConfirmHandler = null;
 
-            // Wire confirm button (replace listener each time)
-            const btn = document.getElementById('rollbackConfirmBtn');
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            newBtn.addEventListener('click', async () => {
-                const note = document.getElementById('rollbackNoteInput').value.trim();
-                const fb   = document.getElementById('rollbackConfirmFeedback');
-                fb.className = 'text-sm text-gray-400 mt-2';
-                fb.textContent = 'Processing…';
-                newBtn.disabled = true;
-                try {
-                    await onConfirm(note);
-                    toggleModal(modal, false);
-                } catch (err) {
-                    fb.className   = 'text-sm text-red-600 mt-2';
-                    fb.textContent = `❌ ${err.message}`;
-                    newBtn.disabled = false;
-                }
-            });
+    function showRollbackConfirm({ title, description, onConfirm }) {
+        const modal = document.getElementById('rollbackConfirmModal');
+        document.getElementById('rollbackConfirmTitle').textContent       = title;
+        document.getElementById('rollbackConfirmDescription').textContent = description;
+        document.getElementById('rollbackNoteInput').value                = '';
+        document.getElementById('rollbackConfirmFeedback').textContent    = '';
+
+    // Store the handler — no cloneNode needed
+        _rollbackConfirmHandler = onConfirm;
+
+        toggleModal(modal, true);
+
+    // Re-enable confirm button in case it was disabled from a previous attempt
+        document.getElementById('rollbackConfirmBtn').disabled = false;
+    }
+
+    // Confirm button — single permanent listener
+    document.getElementById('rollbackConfirmBtn')
+    ?.addEventListener('click', async () => {
+        if (!_rollbackConfirmHandler) return;
+
+        const note   = document.getElementById('rollbackNoteInput').value.trim();
+        const fb     = document.getElementById('rollbackConfirmFeedback');
+        const btn    = document.getElementById('rollbackConfirmBtn');
+        const modal  = document.getElementById('rollbackConfirmModal');
+
+        fb.className   = 'text-sm text-gray-400 mt-2';
+        fb.textContent = 'Processing…';
+        btn.disabled   = true;
+
+        try {
+            await _rollbackConfirmHandler(note);
+            _rollbackConfirmHandler = null;
+            toggleModal(modal, false);
+        } catch (err) {
+            fb.className   = 'text-sm text-red-600 mt-2';
+            fb.textContent = `❌ ${err.message}`;
+            btn.disabled   = false;
         }
+    });
 
-        document.getElementById('rollbackConfirmCancelBtn')
-            ?.addEventListener('click', () =>
-                toggleModal(document.getElementById('rollbackConfirmModal'), false)
-            );
+// Cancel button — single permanent listener
+document.getElementById('rollbackConfirmCancelBtn')
+    ?.addEventListener('click', () => {
+        _rollbackConfirmHandler = null;
+        document.getElementById('rollbackConfirmFeedback').textContent = '';
+        document.getElementById('rollbackNoteInput').value = '';
+        document.getElementById('rollbackConfirmBtn').disabled = false;
+        toggleModal(document.getElementById('rollbackConfirmModal'), false);
+    });
 
         // ── Rollback a whole Surat Jalan ─────────────────────────────
         elements.suratJalanHistoryTable.addEventListener('click', async (e) => {
