@@ -13,9 +13,6 @@ urlpatterns = [
     # --- MAIN ---
     path('', views.index, name='home'),
 
-    # --- HEALTH CHECK ---
-    path('health/', views.health_check, name='health_check'),
-
     # --- PRODUCTS ---
     path('api/products/',        views.get_products,      name='get_products'),
     path('api/add-product/',     views.add_product,       name='add_product'),
@@ -24,9 +21,9 @@ urlpatterns = [
     path('api/bulk-add/',        views.bulk_add_products, name='bulk_add_products'),
 
     # --- TRANSACTIONS ---
-    path('api/transactions/',     views.get_transactions,  name='get_transactions'),
-    path('api/add-transaction/',  views.add_transaction,   name='add_transaction'),
-    path('api/edit-transaction/', views.edit_transaction,  name='edit_transaction'),
+    path('api/transactions/',    views.get_transactions,  name='get_transactions'),
+    path('api/add-transaction/', views.add_transaction,   name='add_transaction'),
+    path('api/edit-transaction/', views.edit_transaction, name='edit_transaction'),
 
     # --- LOGS ---
     path('api/activity-logs/', views.get_activity_logs, name='get_activity_logs'),
@@ -35,29 +32,25 @@ urlpatterns = [
     path('api/stock-movements/',
          views.get_stock_movements,
          name='get_stock_movements'),
-    # FIX: Use <path:> instead of <str:> to support serial numbers containing slashes
-    path('api/stock-movements/<path:serial_number>/',
+    path('api/stock-movements/<str:serial_number>/',
          views.get_product_movement_summary,
          name='get_product_movement_summary'),
     path('api/stock-adjust/',
          views.adjust_stock,
          name='adjust_stock'),
 
-    # --- ROLLBACK ---
-    # FIX: Use <path:> instead of <str:> to support SDR numbers containing slashes
-    path('api/rollback-transaction/<path:sdr_no>/',
+    # FIX #4: Removed duplicate rollback URL registrations — each route appears exactly once.
+    # FIX #1: Added print_surat_jalan URL for the restored PDF view.
+    path('api/rollback-transaction/<str:sdr_no>/',
          views.rollback_transaction,
          name='rollback_transaction'),
     path('api/rollback-movement/<int:movement_id>/',
          views.rollback_movement,
          name='rollback_movement'),
-
-    # --- PDF EXPORT ---
-    # FIX: Use <path:> instead of <str:> to support SDR numbers containing slashes
-    path('api/print-surat-jalan/<path:sdr_no>/',
+    path('api/print-surat-jalan/<str:sdr_no>/',
          views.print_surat_jalan,
          name='print_surat_jalan'),
-    path('api/export-pdf/<path:sdr_no>/',
-         views.print_surat_jalan,
-         name='export_pdf'),
+     path('api/export-pdf/<str:sdr_no>/',
+          views.print_surat_jalan,
+          name='export_pdf'),
 ]
