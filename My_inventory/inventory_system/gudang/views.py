@@ -20,6 +20,9 @@ def log_action(user, action, details):
     if user.is_authenticated:
         ActivityLog.objects.create(user=user, action=action, details=details)
 
+# Add Health Check View
+def health_check(request):
+    return JsonResponse({'status': 'ok', 'message': 'LANCS WMS is running'})
 
 # FIX #5: record_movement now requires qty_before to be passed explicitly,
 # instead of calculating it backwards from the already-saved product.quantity.
