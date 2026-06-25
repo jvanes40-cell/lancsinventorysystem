@@ -9,6 +9,7 @@ from .models import Product, Transaction, ActivityLog, StockMovement
 from .decorators import staff_required, manager_or_staff_required
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.utils.timezone import localtime
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +122,7 @@ def get_transactions(request):
 
     data = []
     for trx in qs:
-        trx['created_at'] = trx['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        trx['created_at'] = localtime(trx['created_at']).strftime('%Y-%m-%d %H:%M:%S')
         for field in ('request_date', 'requestor', 'telephone', 'pic_at_site',
                       'pic_mobile', 'subsystem', 'site_name', 'transport_mode', 'address'):
             trx[field] = trx[field] or ''
@@ -145,7 +146,7 @@ def get_activity_logs(request):
             'user':      log.user.username if log.user else 'Unknown',
             'action':    log.action,
             'details':   log.details,
-            'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': localtime(log.timestamp).strftime('%Y-%m-%d %H:%M:%S'),
         }
         for log in logs
     ]
@@ -191,7 +192,7 @@ def get_stock_movements(request):
             'note':           m.note,
             'is_rolled_back': m.is_rolled_back,
             'performed_by':   m.performed_by.username if m.performed_by else 'System',
-            'timestamp':      m.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': localtime(m.timestamp).strftime('%Y-%m-%d %H:%M:%S'),
         }
         for m in qs
     ]
@@ -222,7 +223,7 @@ def get_product_movement_summary(request, serial_number):
             'note':           m.note,
             'is_rolled_back': getattr(m, 'is_rolled_back', False),  # ← FIX: needed for undo button
             'performed_by':   m.performed_by.username if m.performed_by else 'System',
-            'timestamp':      m.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': localtime(m.timestamp).strftime('%Y-%m-%d %H:%M:%S'),
         }
         for m in movements
     ]
