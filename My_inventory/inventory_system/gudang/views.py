@@ -339,7 +339,10 @@ def add_product(request):
             return JsonResponse({'status': 'error', 'message': 'Part Number dan Serial Number wajib diisi.'})
 
         if Product.objects.filter(serial_number=serial).exists():
-            return JsonResponse({'status': 'error', 'message': f'Serial Number "{serial}" sudah ada!'})
+            log_action(
+                request.user, 'WARN',
+                f"Duplicate SN detected: {serial} | Part: {part} | Added anyway (different shipment)",
+            )
 
         qty_raw = data.get('quantity')
         qty_val = int(qty_raw) if qty_raw not in [None, ''] else 0

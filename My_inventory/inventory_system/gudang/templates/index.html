@@ -1745,36 +1745,49 @@
             input.addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); })
         );
 
-        // --------------- REAL-TIME DUPLICATE SERIAL CHECK ---------------
-        document.getElementById('serialNumber').addEventListener('blur', async () => {
-            const sn = document.getElementById('serialNumber').value.trim();
-            if (!sn) return;
+        // --------------- SERIAL NUMBER DUPLICATE WARNING ---------------
+        // Duplicates are ALLOWED (same SN may come from different shipments)
+        // but user gets a warning notification so they're aware
+        document.getElementById('serialNumber').addEventListener('blur', () => {
+            const sn    = document.getElementById('serialNumber').value.trim();
+            const input = document.getElementById('serialNumber');
+            const hint  = document.getElementById('serialNumberHint');
 
-        const existing = state.products.find(p => p.serialNumber === sn);
-        const input    = document.getElementById('serialNumber');
-        const hint     = document.getElementById('serialNumberHint');
+            if (!sn) {
+                hint.textContent = '';
+                input.style.borderColor = '';
+                input.style.boxShadow   = '';
+                return;
+            }
 
-        if (existing) {
-            input.style.borderColor = '#dc2626';
-            input.style.boxShadow   = '0 0 0 3px rgba(220,38,38,.15)';
-            hint.textContent        = `⚠ Serial Number "${sn}" already exists! (Part: ${existing.partNumber})`;
-            hint.className          = 'text-xs text-red-600 mt-1 font-medium';
-        } else {
-            input.style.borderColor = '#059669';
-            input.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.15)';
-            hint.textContent        = '✓ Serial Number is available';
-            hint.className          = 'text-xs text-green-600 mt-1 font-medium';
-        }
-    });
+            const duplicates = state.products.filter(p => p.serialNumber === sn);
 
-    // Clear serial hint when user starts typing again
-    document.getElementById('serialNumber').addEventListener('input', () => {
-        const input = document.getElementById('serialNumber');
-        const hint  = document.getElementById('serialNumberHint');
-        input.style.borderColor = '';
-        input.style.boxShadow   = '';
-        hint.textContent        = '';
-    });
+            if (duplicates.length > 0) {
+                // Warning — but NOT blocking. User can still save.
+                input.style.borderColor = '#d97706';
+                input.style.boxShadow   = '0 0 0 3px rgba(217,119,6,.15)';
+                const partList = [...new Set(duplicates.map(p => p.partNumber))].join(', ');
+                hint.innerHTML = `⚠ Serial Number ini sudah ada ${duplicates.length}x `
+                            + `(Part: ${partList}). `
+                            + `<span class="font-semibold">Boleh dilanjut jika beda pengiriman.</span>`;
+                hint.className = 'text-xs text-amber-600 mt-1';
+            } else {
+                // Clean — no duplicate
+                input.style.borderColor = '#059669';
+                input.style.boxShadow   = '0 0 0 3px rgba(5,150,105,.15)';
+                hint.textContent        = '✓ Serial Number belum ada di sistem';
+                hint.className          = 'text-xs text-green-600 mt-1';
+            }
+        });
+
+        // Reset hint when user types again
+        document.getElementById('serialNumber').addEventListener('input', () => {
+            const input = document.getElementById('serialNumber');
+            const hint  = document.getElementById('serialNumberHint');
+            input.style.borderColor = '';
+            input.style.boxShadow   = '';
+            hint.textContent        = '';
+        });
 
         // --------------- DASHBOARD STATS ---------------
         function updateDashboardStats() {

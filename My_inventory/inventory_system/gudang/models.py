@@ -63,7 +63,7 @@ def save_user_profile(sender, instance, **kwargs):
 class Product(models.Model):
     pre_order_number = models.CharField(max_length=100, blank=True)
     part_number      = models.CharField(max_length=100)
-    serial_number    = models.CharField(max_length=100, unique=True)
+    serial_number    = models.CharField(max_length=100)
     product_code     = models.CharField(max_length=100, blank=True)
     description      = models.TextField(blank=True)
     quantity         = models.IntegerField(default=0)
