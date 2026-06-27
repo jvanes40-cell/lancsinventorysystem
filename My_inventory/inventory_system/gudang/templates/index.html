@@ -1839,54 +1839,44 @@
         }
 
         async function loadStockMovements() {
-            const serial   = document.getElementById('smFilterSerial').value.trim();
-            const type     = document.getElementById('smFilterType').value;
-            const dateFrom = document.getElementById('smFilterDate').value;
-            const tbody    = document.getElementById('smTableBody');
-            const cards    = document.getElementById('smSummaryCards');
+            const searchTerm = document.getElementById('smFilterSerial').value.trim().toLowerCase();
+            const type       = document.getElementById('smFilterType').value;
+            const dateFrom   = document.getElementById('smFilterDate').value;
+            const tbody      = document.getElementById('smTableBody');
+            const cards      = document.getElementById('smSummaryCards');
 
             tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">Loading…</td></tr>`;
             cards.classList.add('hidden');
 
-            // Per-product summary endpoint when serial is provided
-            if (serial) {
-                try {
-                    const res  = await fetch(`/api/stock-movements/${encodeURIComponent(serial)}/`);
-                    const json = await res.json();
-
-                    if (json.error || json.detail) {
-                        tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">${json.error || json.detail}</td></tr>`;
-                        return;
-                    }
-
-                    document.getElementById('smTotalIn').textContent     = json.summary.total_in;
-                    document.getElementById('smTotalOut').textContent    = json.summary.total_out;
-                    document.getElementById('smTotalAdjust').textContent = json.summary.total_adjust;
-                    document.getElementById('smCurrentQty').textContent  = json.product.current_qty;
-                    cards.classList.remove('hidden');
-
-                    smRenderRows(json.history, tbody, dateFrom, type);
-                    document.getElementById('smRecordCount').textContent =
-                        `Showing ${json.history.length} movement(s) for ${json.product.part_number} (${serial})`;
-                } catch (err) {
-                    tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">Error: ${err.message}</td></tr>`;
-                }
-                return;
-            }
-
-            // General endpoint
+    // Always use the general endpoint — filter client-side by serial, part no, or product code
             const params = new URLSearchParams({ limit: 500 });
             if (type) params.set('type', type);
 
             try {
                 const res  = await fetch(`/api/stock-movements/?${params}`);
                 const data = await res.json();
-                smRenderRows(data, tbody, dateFrom, '');
-                document.getElementById('smRecordCount').textContent = `Showing ${data.length} movement(s)`;
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">Error: ${err.message}</td></tr>`;
-            }
-        }
+
+        // Filter by search term across serial number, part number, and product code
+                let filtered = data;
+                if (searchTerm) {
+                    filtered = data.filter(m =>
+                        (m.serial_number || '').toLowerCase().includes(searchTerm) ||
+                        (m.part_number   || '').toLowerCase().includes(searchTerm) ||
+                        (m.product_code  || '').toLowerCase().includes(searchTerm)
+                    );
+                }
+
+        smRenderRows(filtered, tbody, dateFrom, '');
+
+        const countMsg = searchTerm
+            ? `Showing ${filtered.length} of ${data.length} movement(s) matching "${searchTerm.toUpperCase()}"`
+            : `Showing ${data.length} movement(s)`;
+        document.getElementById('smRecordCount').textContent = countMsg;
+
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-red-500">Error: ${err.message}</td></tr>`;
+    }
+}
 
         function smRenderRows(movements, tbody, dateFrom, typeFilter) {
             let rows = movements;
