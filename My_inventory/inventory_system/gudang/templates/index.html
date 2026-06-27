@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2161,17 +2162,17 @@
 
         // Cancel button — ONE listener only
         document.getElementById('rollbackConfirmCancelBtn')
-            .addEventListener('click', closeRollbackModal);
+            ?.addEventListener('click', closeRollbackModal);
 
         // Click dark overlay to close
         document.getElementById('rollbackConfirmModal')
-            .addEventListener('click', (e) => {
+            ?.addEventListener('click', (e) => {
                 if (e.target.classList.contains('modal-overlay')) closeRollbackModal();
             });
 
         // Confirm button
         document.getElementById('rollbackConfirmBtn')
-            .addEventListener('click', async () => {
+            ?.addEventListener('click', async () => {
                 if (!_rollbackConfirmHandler) return;
                 const note = document.getElementById('rollbackNoteInput').value.trim();
                 const fb   = document.getElementById('rollbackConfirmFeedback');
