@@ -392,9 +392,15 @@ def edit_product(request):
         return JsonResponse({'status': 'error', 'message': 'Method invalid'})
 
     try:
-        data    = json.loads(request.body)
-        serial  = data.get('serialNumber', '').strip()
-        product = Product.objects.get(serial_number=serial)
+        data       = json.loads(request.body)
+        serial     = data.get('serialNumber', '').strip()
+        product_id = data.get('productId')
+
+        if product_id:
+            product = Product.objects.get(id=product_id)
+        else:
+            product = Product.objects.get(serial_number=serial)
+
         changes = _get_changed_fields(product, data)
         old_qty = product.quantity
 
@@ -448,11 +454,15 @@ def delete_product(request):
         return JsonResponse({'status': 'error', 'message': 'Method invalid'})
 
     try:
-        data   = json.loads(request.body)
-        serial = data.get('serialNumber', '').strip()
+        data       = json.loads(request.body)
+        product_id = data.get('productId')
+        serial     = data.get('serialNumber', '').strip()
 
         try:
-            product  = Product.objects.get(serial_number=serial)
+            if product_id:
+                product = Product.objects.get(id=product_id)
+            else:
+                product = Product.objects.get(serial_number=serial)
             part     = product.part_number
             qty      = product.quantity
             location = product.location or '-'
