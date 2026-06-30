@@ -1012,11 +1012,6 @@
             closeProductDetailsBtn: document.getElementById('closeProductDetailsBtn'),
         };
 
-        //----------------
-        const idEl = document.getElementById('editProductId');
-        if (idEl) idEl.value = product.id ?? '';
-
-
         // --------------- MODAL HELPER ---------------
         function toggleModal(modal, show) {
             modal.classList.toggle('invisible', !show);
