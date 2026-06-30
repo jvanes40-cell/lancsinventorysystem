@@ -800,6 +800,7 @@
             </div>
             <form id="editProductForm" class="space-y-4 overflow-y-auto flex-1 pr-2">
                 <input type="hidden" id="editProductSerial" name="serialNumber">
+                <input type="hidden" id="editProductId" name="productId">
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Serial Number <span class="text-xs text-gray-400 font-normal">(read-only)</span></label>
@@ -1011,6 +1012,11 @@
             closeProductDetailsBtn: document.getElementById('closeProductDetailsBtn'),
         };
 
+        //----------------
+        const idEl = document.getElementById('editProductId');
+        if (idEl) idEl.value = product.id ?? '';
+
+
         // --------------- MODAL HELPER ---------------
         function toggleModal(modal, show) {
             modal.classList.toggle('invisible', !show);
@@ -1030,6 +1036,7 @@
                 const response = await fetch('/api/products/');
                 const data = await response.json();
                 state.products = data.map(item => ({
+                    id:             item.id,
                     preOrderNumber: item.pre_order_number,
                     partNumber: item.part_number,
                     serialNumber: item.serial_number,
@@ -1130,12 +1137,12 @@
             }
         }
 
-        async function deleteProduct(serialNumber) {
+        async function deleteProduct(productId) {
             try {
                 const response = await fetch('/api/delete-product/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-                    body: JSON.stringify({ serialNumber }),
+                    body: JSON.stringify({ productId }),
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
@@ -1260,9 +1267,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyColor}">${product.quantity}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.location || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                            <button class="details-product-btn text-indigo-600 hover:text-indigo-900" data-serial-number="${product.serialNumber}">History</button>
-                            <button class="edit-product-btn text-blue-600 hover:text-blue-900" data-serial-number="${product.serialNumber}">Edit</button>
-                            ${CAN_DELETE_STOCK ? `<button class="delete-product-btn text-red-600 hover:text-red-900" data-serial-number="${product.serialNumber}">Del</button>` : ''}
+                            <button class="details-product-btn text-indigo-600 hover:text-indigo-900" data-id="${product.id}" data-serial-number="${product.serialNumber}">History</button>
+                            <button class="edit-product-btn text-blue-600 hover:text-blue-900" data-id="${product.id}" data-serial-number="${product.serialNumber}">Edit</button>
+                            ${CAN_DELETE_STOCK ? `<button class="delete-product-btn text-red-600 hover:text-red-900" data-id="${product.id}" data-serial-number="${product.serialNumber}">Del</button>` : ''}
                         </td>
                     </tr>`;
                 }).join('');
@@ -1585,8 +1592,12 @@
         elements.productTable.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
-            const sn = btn.dataset.serialNumber;
-            const product = state.products.find(p => p.serialNumber === sn);
+            const sn         = btn.dataset.serialNumber;
+            const productId  = btn.dataset.id ? parseInt(btn.dataset.id) : null;
+    // Find by id first (handles duplicate SNs), fall back to SN for safety
+            const product = productId
+                ? state.products.find(p => p.id === productId)
+                : state.products.find(p => p.serialNumber === sn);
 
             if (btn.classList.contains('details-product-btn') && product) {
                 elements.productDetailsTitle.textContent =
@@ -1638,6 +1649,8 @@
                 };
                 const displayEl = document.getElementById('editSerialNumberDisplay');
                 if (displayEl) displayEl.value = product.serialNumber ?? '';
+                const idEl = document.getElementById('editProductId');
+                if (idEl) idEl.value = product.id ?? '';
                 Object.entries(fieldMap).forEach(([key, elId]) => {
                     const el = document.getElementById(elId);
                     if (el) el.value = product[key] ?? '';
@@ -1645,7 +1658,7 @@
                 toggleModal(elements.editProductModal, true);
 
             } else if (btn.classList.contains('delete-product-btn')) {
-                if (confirm(`Hapus SN: ${sn}?`)) deleteProduct(sn);
+                if (confirm(`Hapus SN: ${sn}?`)) deleteProduct(productId || sn);
             }
         });
 
@@ -1653,6 +1666,7 @@
         elements.editProductForm.addEventListener('submit', (e) => {
             e.preventDefault();
             updateProduct({
+                productId:    document.getElementById('editProductId').value,
                 serialNumber: document.getElementById('editProductSerial').value,
                 preOrderNumber: document.getElementById('editPreOrderNumber').value,
                 partNumber: document.getElementById('editPartNumber').value,
