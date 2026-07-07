@@ -1254,9 +1254,15 @@
                     const qtyColor = product.quantity <= 0
                         ? 'text-red-600 font-bold'
                         : (product.quantity < 5 ? 'text-orange-600 font-medium' : 'text-gray-900');
+                        // Check if this SN has duplicates
+                        const isDuplicate = state.products.filter(p => p.serialNumber === product.serialNumber).length > 1;
+                        const snDisplay   = isDuplicate
+                            ? `${product.serialNumber} <span class="text-xs text-amber-600 font-medium block">rcv: ${product.dateAdded?.split('T')[0] || '-'}</span>`
+                            : product.serialNumber;
+
                     return `<tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.partNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.serialNumber}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${snDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.awb || '-'}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="${product.description}">${product.description || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyColor}">${product.quantity}</td>
