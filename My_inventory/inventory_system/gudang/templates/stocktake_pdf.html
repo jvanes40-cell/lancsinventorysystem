@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: a4 portrait; margin: 1.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; }
+        table { width: 100%; border-collapse: collapse; }
+        .header-table td { padding-bottom: 15px; border-bottom: 2px solid #000; }
+        .title { font-size: 20pt; font-weight: bold; }
+        .company { font-size: 12pt; font-weight: bold; }
+        .items-table th { background: #f0f0f0; border: 1px solid #000; padding: 6px; font-size: 9pt; }
+        .items-table td { border: 1px solid #000; padding: 6px; font-size: 9pt; vertical-align: top; }
+        .ok   { background: #d4edda; }
+        .diff { background: #fff3cd; }
+        .miss { background: #f8d7da; }
+        .center { text-align: center; }
+        .summary { margin-top: 20px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <table class="header-table">
+        <tr>
+            <td style="width:60%">
+                <div class="title">STOCKTAKE REPORT</div>
+                <div class="company">PT. LANCS ARCHE CONSUMMA</div>
+            </td>
+            <td style="width:40%; text-align:right; vertical-align:bottom">
+                <b>Date:</b> {{ stocktake.date }}<br>
+                <b>Status:</b> {{ stocktake.get_status_display }}<br>
+                <b>Notes:</b> {{ stocktake.notes|default:"-" }}
+            </td>
+        </tr>
+    </table>
+
+    <br>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="4%" class="center">No</th>
+                <th width="18%">Part Number</th>
+                <th width="18%">Serial Number</th>
+                <th width="25%">Description</th>
+                <th width="10%">Location</th>
+                <th width="8%" class="center">System Qty</th>
+                <th width="8%" class="center">Counted</th>
+                <th width="9%" class="center">Diff</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr class="{% if item.counted_qty is None %}{% elif item.discrepancy == 0 %}ok{% elif item.discrepancy != 0 %}diff{% endif %}">
+                <td class="center">{{ forloop.counter }}</td>
+                <td>{{ item.product.part_number }}</td>
+                <td>{{ item.product.serial_number }}</td>
+                <td>{{ item.product.description|default:"-" }}</td>
+                <td>{{ item.product.location|default:"-" }}</td>
+                <td class="center">{{ item.system_qty }}</td>
+                <td class="center">{{ item.counted_qty|default:"—" }}</td>
+                <td class="center">
+                    {% if item.discrepancy is not None %}
+                        {% if item.discrepancy > 0 %}+{{ item.discrepancy }}
+                        {% elif item.discrepancy < 0 %}{{ item.discrepancy }}
+                        {% else %}✓{% endif %}
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary">
+        <b>Total Items:</b> {{ items|length }} &nbsp;|&nbsp;
+        <b>Counted:</b> {% for i in items %}{% if i.counted_qty is not None %}{% if forloop.last %}{{ forloop.counter }}{% endif %}{% endif %}{% endfor %} &nbsp;|&nbsp;
+        <b>Discrepancies:</b> {% for i in items %}{% if i.discrepancy and i.discrepancy != 0 %}{{ forloop.counter }}{% endif %}{% endfor %}
+    </div>
+</body>
+</html>

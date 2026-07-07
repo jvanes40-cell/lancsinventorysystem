@@ -1,0 +1,610 @@
+[
+{
+    "model": "auth.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$vgapB3wc0p3wsx7cKR51Fo$qvxOgOJ5n9e82U0CSofk4jYOvL43JErn0yD4P3hppAU=",
+        "last_login": "2026-06-27T02:06:24.915Z",
+        "is_superuser": true,
+        "username": "admin",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-06-22T04:10:56.291Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "23l5v4xamg6b306jjxjl7r02o8pecte7",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wbYww:I7Zd3gzyzNLDtNtPqyappxqL9nKaQHH7vOdm4to4bGs",
+        "expire_date": "2026-06-22T15:20:06.018Z"
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "4j1rwj462mgvj93x3kquwf2apymilqzw",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wcZil:f3IARajizxJyHEF9iNuyz6WqKCSLY0VKRIvafMOxaCE",
+        "expire_date": "2026-06-25T10:21:39.443Z"
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "dfi6dfwj0dszmruxv3l25jr4qqahfar7",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wcxWb:Ml1ef2NRP6QkPnDG-JhSDR1m-qVu-1REgksvC5m8hAw",
+        "expire_date": "2026-06-26T11:46:41.779Z"
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "gtaq204r81plniylbbq3ruv9owrxgoj5",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wcZjF:0qaspAVgnzz_tqGu08qtkx3F_R6t2S9nspD6dSIV-S8",
+        "expire_date": "2026-06-25T10:22:09.713Z"
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "gzt31smblmwcscxzkepea2dorg58u0dg",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wdIR6:WGXJadVGqIl6HYzYqsKqLjovESf6uqT_Sc4LpOjXLnw",
+        "expire_date": "2026-06-27T10:06:24.929Z"
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "kcn4cwgyffwzl63o6q4r6xvk0urocjqf",
+    "fields": {
+        "session_data": ".eJxVjDsOwjAQBe_iGlkb_2JT0nMGa3dt4wBypDipEHeHSCmgfTPzXiLitta49bzEKYmzGMTpdyPkR247SHdst1ny3NZlIrkr8qBdXueUn5fD_Tuo2Ou31oZVIZMSjHoYNQEX47zX7DRCtmw5h2AIAQwGWxIUrwgCOetVYHLi_QHhGDfN:1wbW0I:V0WeJiiWK9W2_6MIBkwkN8omoIf8_YSkiZ1Kz152cwo",
+        "expire_date": "2026-06-22T12:11:22.200Z"
+    }
+},
+{
+    "model": "gudang.userprofile",
+    "pk": 1,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "role": "staff"
+    }
+},
+{
+    "model": "gudang.product",
+    "pk": 1,
+    "fields": {
+        "pre_order_number": "01",
+        "part_number": "011",
+        "serial_number": "0111",
+        "product_code": "0222",
+        "description": "CIENA",
+        "quantity": 6,
+        "category": "DWDM",
+        "platform": "TELKOM",
+        "location": "LANCS",
+        "awb": "011111",
+        "date_added": "2026-06-22T07:44:25.330Z"
+    }
+},
+{
+    "model": "gudang.product",
+    "pk": 2,
+    "fields": {
+        "pre_order_number": "1",
+        "part_number": "011",
+        "serial_number": "0111",
+        "product_code": "ZXS-C2OTSTZZ-01",
+        "description": "",
+        "quantity": 2,
+        "category": "",
+        "platform": "",
+        "location": "",
+        "awb": "",
+        "date_added": "2026-06-26T05:39:26.451Z"
+    }
+},
+{
+    "model": "gudang.product",
+    "pk": 3,
+    "fields": {
+        "pre_order_number": "011",
+        "part_number": "011",
+        "serial_number": "0111",
+        "product_code": "0222",
+        "description": "",
+        "quantity": 2,
+        "category": "",
+        "platform": "",
+        "location": "",
+        "awb": "",
+        "date_added": "2026-06-26T08:00:02.419Z"
+    }
+},
+{
+    "model": "gudang.product",
+    "pk": 4,
+    "fields": {
+        "pre_order_number": "06/2025",
+        "part_number": "023",
+        "serial_number": "123",
+        "product_code": "13",
+        "description": "1221",
+        "quantity": 112,
+        "category": "12",
+        "platform": "2",
+        "location": "2",
+        "awb": "",
+        "date_added": "2026-06-27T02:23:34.724Z"
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 1,
+    "fields": {
+        "product": 1,
+        "movement_type": "IN",
+        "quantity": 5,
+        "qty_before": 0,
+        "qty_after": 5,
+        "reference": "Initial Stock",
+        "note": "Product added to inventory",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-22T07:44:25.340Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 2,
+    "fields": {
+        "product": 1,
+        "movement_type": "ADJUST",
+        "quantity": -2,
+        "qty_before": 5,
+        "qty_after": 3,
+        "reference": "Manual Adjustment",
+        "note": "Too much",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-22T07:45:09.569Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 3,
+    "fields": {
+        "product": 1,
+        "movement_type": "ADJUST",
+        "quantity": -1,
+        "qty_before": 3,
+        "qty_after": 2,
+        "reference": "Manual Adjustment",
+        "note": "Ya",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-22T07:46:14.571Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 4,
+    "fields": {
+        "product": 1,
+        "movement_type": "OUT",
+        "quantity": 1,
+        "qty_before": 2,
+        "qty_after": 1,
+        "reference": "A1",
+        "note": "Surat Jalan A1 | Project: TELKOM",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-22T07:47:31.427Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 5,
+    "fields": {
+        "product": 1,
+        "movement_type": "ADJUST",
+        "quantity": 4,
+        "qty_before": 1,
+        "qty_after": 5,
+        "reference": "Edit Product",
+        "note": "Quantity changed via product edit (1 → 5)",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-25T08:09:44.757Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 6,
+    "fields": {
+        "product": 1,
+        "movement_type": "ADJUST",
+        "quantity": 1,
+        "qty_before": 5,
+        "qty_after": 6,
+        "reference": "Manual Adjustment",
+        "note": "Salah input",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-25T08:19:30.161Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 7,
+    "fields": {
+        "product": 2,
+        "movement_type": "IN",
+        "quantity": 2,
+        "qty_before": 0,
+        "qty_after": 2,
+        "reference": "Initial Stock",
+        "note": "Product added to inventory",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-26T05:39:26.458Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 8,
+    "fields": {
+        "product": 3,
+        "movement_type": "IN",
+        "quantity": 2,
+        "qty_before": 0,
+        "qty_after": 2,
+        "reference": "Initial Stock",
+        "note": "Product added to inventory",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-26T08:00:02.427Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.stockmovement",
+    "pk": 9,
+    "fields": {
+        "product": 4,
+        "movement_type": "IN",
+        "quantity": 112,
+        "qty_before": 0,
+        "qty_after": 112,
+        "reference": "Initial Stock",
+        "note": "Product added to inventory",
+        "performed_by": [
+            "admin"
+        ],
+        "timestamp": "2026-06-27T02:23:34.732Z",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.transaction",
+    "pk": 1,
+    "fields": {
+        "sdr_no": "A1",
+        "project_name": "TELKOM",
+        "recipient": "MAS UDIN",
+        "items_json": "[{\"preOrderNumber\": \"01\", \"partNumber\": \"011\", \"serialNumber\": \"0111\", \"productCode\": \"0222\", \"awb\": \"011111\", \"description\": \"CIENA\", \"quantity\": 1, \"category\": \"DWDM\", \"platform\": \"TELKOM\", \"location\": \"LANCS\", \"dateAdded\": \"2026-06-22T07:44:25.330Z\", \"remark\": \"KIRIM 1 DULU YA\"}]",
+        "created_at": "2026-06-22T07:47:31.423Z",
+        "request_date": "2026-06-22",
+        "requestor": "TELKOM",
+        "telephone": "08222333444",
+        "pic_at_site": "SONNI",
+        "pic_mobile": "087654321",
+        "subsystem": "POP",
+        "site_name": "BRAWIJAYA",
+        "transport_mode": "PESAWAT",
+        "address": "KANTOR TELKOM",
+        "is_rolled_back": false,
+        "rolled_back_by": null,
+        "rolled_back_at": null,
+        "rollback_note": ""
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 1,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADD",
+        "details": "Added Product: 011 | SN: 0111 | Qty: 5 | Location: LANCS | Category: DWDM",
+        "timestamp": "2026-06-22T07:44:25.349Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 2,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADJUST",
+        "details": "Stock Adjustment | SN: 0111 | 011 | Delta: -2 | 5 → 3 | Reason: Too much",
+        "timestamp": "2026-06-22T07:45:09.575Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 3,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADJUST",
+        "details": "Stock Adjustment | SN: 0111 | 011 | Delta: -1 | 3 → 2 | Reason: Ya",
+        "timestamp": "2026-06-22T07:46:14.577Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 4,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "WITHDRAW",
+        "details": "Surat Jalan A1 | Project: TELKOM | Item: 011 (SN: 0111) | Qty Withdrawn: 1 | Stock: 2 → 1",
+        "timestamp": "2026-06-22T07:47:31.428Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 5,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "WITHDRAW_SUMMARY",
+        "details": "Surat Jalan A1 created for 'TELKOM' | Recipient: MAS UDIN | Site: BRAWIJAYA | Total Items: 1",
+        "timestamp": "2026-06-22T07:47:31.435Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 6,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-22T07:56:35.550Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 7,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-22T07:56:44.546Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 8,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-25T02:21:51.475Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 9,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-25T02:22:16.770Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 10,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-25T03:54:37.196Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 11,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-25T03:55:32.604Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 12,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "PRINT_PDF",
+        "details": "Printed PDF: Surat Jalan A1 | Project: TELKOM | Recipient: MAS UDIN",
+        "timestamp": "2026-06-25T08:09:20.881Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 13,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "EDIT",
+        "details": "Edited Product SN: 0111 | Changes: Quantity: '1' → '5'",
+        "timestamp": "2026-06-25T08:09:44.777Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 14,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADJUST",
+        "details": "Stock Adjustment | SN: 0111 | 011 | Delta: +1 | 5 → 6 | Reason: Salah input",
+        "timestamp": "2026-06-25T08:19:30.168Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 15,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADD",
+        "details": "Added Product: 011 | SN: - | Qty: -3 | Location: GUDANG ATAS | Category: TRANSPONDER",
+        "timestamp": "2026-06-25T08:24:29.113Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 16,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "DELETE",
+        "details": "Deleted Product: 011 | SN: - | Last Qty: -3 | Last Location: GUDANG ATAS",
+        "timestamp": "2026-06-25T08:24:54.416Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 17,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "WARN",
+        "details": "Duplicate SN detected: 0111 | Part: 011 | Added anyway (different shipment)",
+        "timestamp": "2026-06-26T05:39:26.437Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 18,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADD",
+        "details": "Added Product: 011 | SN: 0111 | Qty: 2 | Location: - | Category: -",
+        "timestamp": "2026-06-26T05:39:26.467Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 19,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "WARN",
+        "details": "Duplicate SN detected: 0111 | Part: 011 | Added anyway (different shipment)",
+        "timestamp": "2026-06-26T08:00:02.411Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 20,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADD",
+        "details": "Added Product: 011 | SN: 0111 | Qty: 2 | Location: - | Category: -",
+        "timestamp": "2026-06-26T08:00:02.435Z"
+    }
+},
+{
+    "model": "gudang.activitylog",
+    "pk": 21,
+    "fields": {
+        "user": [
+            "admin"
+        ],
+        "action": "ADD",
+        "details": "Added Product: 023 | SN: 123 | Qty: 112 | Location: 2 | Category: 12",
+        "timestamp": "2026-06-27T02:23:34.744Z"
+    }
+}
+]

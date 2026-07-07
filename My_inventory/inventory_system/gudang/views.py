@@ -1,3 +1,4 @@
+from itertools import product
 import json
 import csv
 from django.db import transaction as db_transaction
@@ -498,6 +499,16 @@ def add_transaction(request):
 
         sdr_no       = data.get('sdrNo', '-')
         project_name = data.get('projectName', '-')
+
+        # Add this inside the validation loop in add_transaction, after the stock check:
+        if product.is_reserved:
+            return JsonResponse({
+                'status':  'error',
+                'message': (
+                    f'Item {product.part_number} (SN: {serial}) sedang direservasi '
+                    f'oleh {product.reserved_by}. Hubungi admin untuk melepas reservasi.'
+                ),
+            })
 
         # FIX #6: Use select_for_update() inside the atomic block to prevent
         # race conditions between the stock check and the deduction.
@@ -1006,6 +1017,40 @@ def rollback_movement(request, movement_id):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
 
+@login_required
+@manager_or_staff_required
+def get_transaction_detail(request, sdr_no):
+    """Return full detail of a single Surat Jalan including all item details."""
+    trx = get_object_or_404(Transaction, sdr_no=sdr_no)
+    items = json.loads(trx.items_json)
+
+    # Enrich items with current product data
+    enriched_items = []
+    for item in items:
+        sn = item.get('serialNumber', '')
+        try:
+            product = Product.objects.filter(serial_number=sn).first()
+            item['currentQty']    = product.quantity if product else '-'
+            item['location']      = product.location if product else '-'
+            item['category']      = product.category if product else '-'
+        except Exception:
+            pass
+        enriched_items.append(item)
+
+    return JsonResponse({
+        'sdr_no':        trx.sdr_no,
+        'project_name':  trx.project_name,
+        'recipient':     trx.recipient,
+        'request_date':  trx.request_date or '',
+        'requestor':     trx.requestor or '',
+        'pic_at_site':   trx.pic_at_site or '',
+        'site_name':     trx.site_name or '',
+        'created_at':    localtime(trx.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+        'is_rolled_back': trx.is_rolled_back,
+        'items':         enriched_items,
+        'total_items':   len(enriched_items),
+        'total_qty':     sum(int(i.get('quantity', 0)) for i in enriched_items),
+    })
 
 # ---------------------------------------------------------------------------
 # FIX #1: Restored the orphaned PDF view that was floating outside any function
@@ -1032,4 +1077,309 @@ def print_surat_jalan(request, sdr_no):
         f"Printed PDF: Surat Jalan {sdr_no} | "
         f"Project: {trx.project_name} | Recipient: {trx.recipient}",
     )
+    return response
+
+@csrf_exempt
+@login_required
+@staff_required
+def create_stocktake(request):
+    """Create a new stocktake session and snapshot current stock quantities."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        data = json.loads(request.body)
+        date = data.get('date')
+        if not date:
+            return JsonResponse({'status': 'error', 'message': 'Date wajib diisi.'})
+
+        from .models import Stocktake, StocktakeItem
+        from django.utils.timezone import localtime
+        import datetime
+
+        stocktake = Stocktake.objects.create(
+            date       = date,
+            status     = 'open',
+            created_by = request.user,
+            notes      = data.get('notes', ''),
+        )
+
+        # Snapshot all current products
+        products = Product.objects.all()
+        items = [
+            StocktakeItem(
+                stocktake  = stocktake,
+                product    = p,
+                system_qty = p.quantity,
+            )
+            for p in products
+        ]
+        StocktakeItem.objects.bulk_create(items)
+
+        log_action(request.user, 'STOCKTAKE_CREATE',
+            f"Stocktake created for {date} | {len(items)} items snapshotted")
+
+        return JsonResponse({'status': 'success', 'id': stocktake.id,
+                             'message': f'Stocktake {date} dibuat dengan {len(items)} item.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+@manager_or_staff_required
+def get_stocktakes(request):
+    from .models import Stocktake
+    sts = Stocktake.objects.order_by('-date').values(
+        'id', 'date', 'status', 'created_at', 'notes'
+    )
+    data = []
+    for s in sts:
+        s['created_at'] = localtime(s['created_at']).strftime('%Y-%m-%d %H:%M:%S')
+        s['date']       = str(s['date'])
+        data.append(s)
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+@manager_or_staff_required
+def get_stocktake_detail(request, stocktake_id):
+    from .models import Stocktake, StocktakeItem
+    stocktake = get_object_or_404(Stocktake, id=stocktake_id)
+    items = StocktakeItem.objects.filter(stocktake=stocktake).select_related('product')
+    data = [
+        {
+            'id':           i.id,
+            'product_id':   i.product.id,
+            'serial_number': i.product.serial_number,
+            'part_number':  i.product.part_number,
+            'description':  i.product.description,
+            'location':     i.product.location,
+            'system_qty':   i.system_qty,
+            'counted_qty':  i.counted_qty,
+            'discrepancy':  i.discrepancy,
+        }
+        for i in items
+    ]
+    return JsonResponse({
+        'id':         stocktake.id,
+        'date':       str(stocktake.date),
+        'status':     stocktake.status,
+        'notes':      stocktake.notes,
+        'items':      data,
+        'total_items': len(data),
+    })
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def update_stocktake_count(request, stocktake_id):
+    """Update physical count for a stocktake item."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import Stocktake, StocktakeItem
+        data         = json.loads(request.body)
+        item_id      = data.get('itemId')
+        counted_qty  = data.get('countedQty')
+
+        item             = StocktakeItem.objects.get(id=item_id, stocktake_id=stocktake_id)
+        item.counted_qty = int(counted_qty)
+        item.save()
+
+        return JsonResponse({
+            'status':      'success',
+            'discrepancy': item.discrepancy,
+            'message':     f'Count updated: {item.discrepancy:+d} discrepancy',
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def complete_stocktake(request, stocktake_id):
+    """Mark stocktake as completed and generate PDF report."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import Stocktake
+        stocktake        = get_object_or_404(Stocktake, id=stocktake_id)
+        stocktake.status = 'completed'
+        stocktake.save()
+        log_action(request.user, 'STOCKTAKE_COMPLETE',
+            f"Stocktake {stocktake.date} marked as completed")
+        return JsonResponse({'status': 'success', 'message': 'Stocktake selesai.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+def export_stocktake_pdf(request, stocktake_id):
+    """Generate PDF report for a stocktake."""
+    from .models import Stocktake, StocktakeItem
+    stocktake = get_object_or_404(Stocktake, id=stocktake_id)
+    items     = StocktakeItem.objects.filter(stocktake=stocktake).select_related('product')
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="Stocktake_{stocktake.date}.pdf"'
+
+    template    = get_template('stocktake_pdf.html')
+    html        = template.render({'stocktake': stocktake, 'items': items})
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=400)
+    return response
+
+@csrf_exempt
+@login_required
+@staff_required
+def reserve_product(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from django.utils import timezone
+        data       = json.loads(request.body)
+        product_id = data.get('productId')
+        note       = data.get('note', '').strip()
+
+        product = Product.objects.get(id=product_id)
+        if product.is_reserved:
+            return JsonResponse({
+                'status':  'error',
+                'message': f'Item sudah direservasi oleh {product.reserved_by}.',
+            })
+
+        product.is_reserved   = True
+        product.reserved_by   = request.user
+        product.reserved_at   = timezone.now()
+        product.reserved_note = note
+        product.save()
+
+        log_action(request.user, 'RESERVE',
+            f"Reserved: {product.part_number} (SN: {product.serial_number}) | Note: {note}")
+        return JsonResponse({'status': 'success', 'message': 'Item berhasil direservasi.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def release_product(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        data       = json.loads(request.body)
+        product_id = data.get('productId')
+
+        product               = Product.objects.get(id=product_id)
+        product.is_reserved   = False
+        product.reserved_by   = None
+        product.reserved_at   = None
+        product.reserved_note = ''
+        product.save()
+
+        log_action(request.user, 'RELEASE',
+            f"Released: {product.part_number} (SN: {product.serial_number})")
+        return JsonResponse({'status': 'success', 'message': 'Reservasi dibatalkan.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+    
+@csrf_exempt
+@login_required
+@staff_required
+def add_incoming_note(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import IncomingNote
+        data    = json.loads(request.body)
+        note_no = data.get('noteNo', '').strip()
+        items   = data.get('items', [])
+
+        if not note_no:
+            return JsonResponse({'status': 'error', 'message': 'Note Number wajib diisi.'})
+        if not items:
+            return JsonResponse({'status': 'error', 'message': 'Minimal satu item harus ada.'})
+        if IncomingNote.objects.filter(note_no=note_no).exists():
+            return JsonResponse({'status': 'error', 'message': f'Note {note_no} sudah ada.'})
+
+        with db_transaction.atomic():
+            note = IncomingNote.objects.create(
+                note_no       = note_no,
+                supplier      = data.get('supplier', ''),
+                received_by   = data.get('receivedBy', ''),
+                received_date = data.get('receivedDate', ''),
+                awb           = data.get('awb', ''),
+                notes         = data.get('notes', ''),
+                items_json    = json.dumps(items),
+                created_by    = request.user,
+            )
+
+            # Auto-create stock IN movements for each item
+            for item in items:
+                sn  = item.get('serialNumber', '').strip()
+                qty = int(item.get('quantity', 0))
+                if not sn or qty <= 0:
+                    continue
+                try:
+                    product    = Product.objects.get(id=item.get('productId'))
+                    qty_before = product.quantity
+                    product.quantity += qty
+                    product.save()
+                    StockMovement.objects.create(
+                        product       = product,
+                        movement_type = 'IN',
+                        quantity      = qty,
+                        qty_before    = qty_before,
+                        qty_after     = product.quantity,
+                        reference     = note_no,
+                        note          = f"Incoming Note {note_no} | Supplier: {data.get('supplier', '-')}",
+                        performed_by  = request.user,
+                    )
+                except Product.DoesNotExist:
+                    continue
+
+        log_action(request.user, 'INCOMING',
+            f"Incoming Note {note_no} | Supplier: {data.get('supplier', '-')} | {len(items)} items")
+        return JsonResponse({'status': 'success', 'message': f'Incoming Note {note_no} berhasil dibuat!'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+@manager_or_staff_required
+def get_incoming_notes(request):
+    from .models import IncomingNote
+    notes = IncomingNote.objects.order_by('-created_at').values(
+        'id', 'note_no', 'supplier', 'received_by',
+        'received_date', 'awb', 'notes', 'created_at'
+    )
+    data = []
+    for n in notes:
+        n['created_at'] = localtime(n['created_at']).strftime('%Y-%m-%d %H:%M:%S')
+        data.append(n)
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def export_incoming_note_pdf(request, note_no):
+    from .models import IncomingNote
+    note  = get_object_or_404(IncomingNote, note_no=note_no)
+    items = json.loads(note.items_json)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="IN_{note_no}.pdf"'
+
+    template    = get_template('incoming_note_pdf.html')
+    html        = template.render({'note': note, 'items': items})
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=400)
+
+    log_action(request.user, 'PRINT_PDF',
+        f"Printed Incoming Note PDF: {note_no}")
     return response

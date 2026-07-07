@@ -22,11 +22,14 @@ urlpatterns = [
     path('api/edit-product/',    views.edit_product,      name='edit_product'),
     path('api/delete-product/',  views.delete_product,    name='delete_product'),
     path('api/bulk-add/',        views.bulk_add_products, name='bulk_add_products'),
+    path('api/reserve-product/',  views.reserve_product,  name='reserve_product'),
+    path('api/release-product/',  views.release_product,  name='release_product'),
 
     # --- TRANSACTIONS ---
     path('api/transactions/',     views.get_transactions,  name='get_transactions'),
     path('api/add-transaction/',  views.add_transaction,   name='add_transaction'),
     path('api/edit-transaction/', views.edit_transaction,  name='edit_transaction'),
+    path('api/transaction/<path:sdr_no>/', views.get_transaction_detail, name='get_transaction_detail'),
 
     # --- LOGS ---
     path('api/activity-logs/', views.get_activity_logs, name='get_activity_logs'),
@@ -60,4 +63,9 @@ urlpatterns = [
     path('api/export-pdf/<path:sdr_no>/',
          views.print_surat_jalan,
          name='export_pdf'),
+     
+     # --- Incoming Notes ---
+     path('api/incoming-notes/',              views.get_incoming_notes,       name='get_incoming_notes'),
+path('api/incoming-notes/create/',       views.add_incoming_note,        name='add_incoming_note'),
+path('api/incoming-note-pdf/<path:note_no>/', views.export_incoming_note_pdf, name='incoming_note_pdf'),
 ]

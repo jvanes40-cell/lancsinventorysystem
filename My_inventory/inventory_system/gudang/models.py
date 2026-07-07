@@ -90,11 +90,34 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.part_number} - {self.serial_number}"
 
+is_reserved    = models.BooleanField(default=False)
+reserved_by    = models.ForeignKey(
+    User, on_delete=models.SET_NULL, null=True, blank=True,
+    related_name='reserved_products'
+)
+reserved_at    = models.DateTimeField(null=True, blank=True)
+reserved_note  = models.TextField(blank=True)
+
+# Incoming Note
+class IncomingNote(models.Model):
+    note_no      = models.CharField(max_length=100, unique=True)
+    supplier     = models.CharField(max_length=200, blank=True)
+    received_by  = models.CharField(max_length=100, blank=True)
+    received_date = models.CharField(max_length=50, blank=True)
+    awb          = models.CharField(max_length=100, blank=True)
+    notes        = models.TextField(blank=True)
+    items_json   = models.TextField(blank=True)
+    created_by   = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.note_no} - {self.supplier}"
 
 # ---------------------------------------------------------------------------
 # STOCK MOVEMENT
 # Structured record of every IN / OUT / ADJUST / ROLLBACK event on a product.
 # ---------------------------------------------------------------------------
+
 
 class StockMovement(models.Model):
     MOVEMENT_TYPES = [
@@ -201,3 +224,34 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.timestamp}"
+    
+class Stocktake(models.Model):
+    STATUS_CHOICES = [
+        ('open',      'Open'),
+        ('completed', 'Completed'),
+        ('frozen',    'Frozen'),
+    ]
+    date        = models.DateField()
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stocktakes')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    notes       = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Stocktake {self.date} [{self.status}]"
+
+
+class StocktakeItem(models.Model):
+    stocktake       = models.ForeignKey(Stocktake, on_delete=models.CASCADE, related_name='items')
+    product         = models.ForeignKey(Product, on_delete=models.CASCADE)
+    system_qty      = models.IntegerField()   # qty from system at time of stocktake
+    counted_qty     = models.IntegerField(null=True, blank=True)  # actual physical count
+    discrepancy     = models.IntegerField(null=True, blank=True)  # counted - system
+
+    def save(self, *args, **kwargs):
+        if self.counted_qty is not None:
+            self.discrepancy = self.counted_qty - self.system_qty
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.serial_number} | sys:{self.system_qty} cnt:{self.counted_qty}"
