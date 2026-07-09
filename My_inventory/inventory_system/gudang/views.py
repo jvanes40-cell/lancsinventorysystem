@@ -104,7 +104,7 @@ def get_products(request):
     products = list(Product.objects.values(
         'id', 'pre_order_number', 'part_number', 'serial_number',
         'product_code', 'description', 'quantity', 'category',
-        'platform', 'location', 'awb', 'date_added',
+        'platform', 'location', 'awb', 'date_added', 'is_reserved', 'reserved_note',
     ).order_by('part_number'))
     return JsonResponse(products, safe=False)
 
@@ -500,33 +500,31 @@ def add_transaction(request):
         sdr_no       = data.get('sdrNo', '-')
         project_name = data.get('projectName', '-')
 
-        # Add this inside the validation loop in add_transaction, after the stock check:
-        if product.is_reserved:
-            return JsonResponse({
-                'status':  'error',
-                'message': (
-                    f'Item {product.part_number} (SN: {serial}) sedang direservasi '
-                    f'oleh {product.reserved_by}. Hubungi admin untuk melepas reservasi.'
-                ),
-            })
-
-        # FIX #6: Use select_for_update() inside the atomic block to prevent
-        # race conditions between the stock check and the deduction.
         with db_transaction.atomic():
-            serials  = [item.get('serialNumber', '') for item in items]
-            products = {
-                p.serial_number: p
-                for p in Product.objects.select_for_update().filter(serial_number__in=serials)
+            # Use id-based lookup to correctly handle duplicate serial numbers
+            product_ids    = [item.get('productId') for item in items if item.get('productId')]
+            products_by_id = {
+                p.id: p
+                for p in Product.objects.select_for_update().filter(id__in=product_ids)
             }
 
-            # Validate all stock levels before making any changes
+            # ── STEP 1: Validate everything BEFORE touching any stock ──
             for item in items:
                 serial     = item.get('serialNumber', '')
                 qty_keluar = int(item.get('quantity', 0))
-                product    = products.get(serial)
+                product    = products_by_id.get(item.get('productId'))
 
                 if not product:
                     return JsonResponse({'status': 'error', 'message': f'Barang SN: {serial} tidak ditemukan!'})
+
+                if product.is_reserved:
+                    return JsonResponse({
+                        'status':  'error',
+                        'message': (
+                            f'Item {product.part_number} (SN: {serial}) sedang direservasi '
+                            f'oleh {product.reserved_by}. Hubungi admin untuk melepas reservasi.'
+                        ),
+                    })
 
                 if product.quantity < qty_keluar:
                     return JsonResponse({
@@ -537,6 +535,7 @@ def add_transaction(request):
                         ),
                     })
 
+            # ── STEP 2: All validated — create transaction record ──
             Transaction.objects.create(
                 sdr_no         = sdr_no,
                 project_name   = project_name,
@@ -553,13 +552,14 @@ def add_transaction(request):
                 address        = data.get('address', ''),
             )
 
+            # ── STEP 3: Deduct stock ONCE per item and record movement ──
             for item in items:
                 serial     = item.get('serialNumber', '')
                 qty_keluar = int(item.get('quantity', 0))
-                product    = products[serial]
+                product    = products_by_id.get(item.get('productId'))
                 qty_before = product.quantity
 
-                product.quantity -= qty_keluar
+                product.quantity -= qty_keluar   # deduct ONCE only
                 product.save()
 
                 StockMovement.objects.create(

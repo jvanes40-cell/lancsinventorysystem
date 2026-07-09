@@ -1,0 +1,88 @@
+ERROR 2026-07-07 15:22:22,842 log Internal Server Error: /api/products/
+Traceback (most recent call last):
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2245, in add_fields
+    join_info = self.setup_joins(
+                ^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 1908, in setup_joins
+    path, final_field, targets, rest = self.names_to_path(
+                                       ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 1813, in names_to_path
+    raise FieldError(
+django.core.exceptions.FieldError: Cannot resolve keyword 'is_reserved' into field. Choices are: awb, category, date_added, description, id, location, movements, part_number, platform, pre_order_number, product_code, quantity, serial_number, stocktakeitem
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\inventory_system\gudang\decorators.py", line 23, in wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\inventory_system\gudang\views.py", line 104, in get_products
+    products = list(Product.objects.values(
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\query.py", line 1370, in values
+    clone = self._values(*fields, **expressions)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\query.py", line 1365, in _values
+    clone.query.set_values(fields)
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2584, in set_values
+    self.add_fields(field_names, True)
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2286, in add_fields
+    raise FieldError(
+django.core.exceptions.FieldError: Cannot resolve keyword 'is_reserved' into field. Choices are: awb, category, date_added, description, id, location, movements, part_number, platform, pre_order_number, product_code, quantity, serial_number, stocktakeitem
+ERROR 2026-07-07 15:22:22,974 basehttp "GET /api/products/ HTTP/1.1" 500 145
+ERROR 2026-07-09 09:48:11,398 log Internal Server Error: /api/products/
+Traceback (most recent call last):
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2245, in add_fields
+    join_info = self.setup_joins(
+                ^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 1908, in setup_joins
+    path, final_field, targets, rest = self.names_to_path(
+                                       ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 1813, in names_to_path
+    raise FieldError(
+django.core.exceptions.FieldError: Cannot resolve keyword 'is_reserved' into field. Choices are: awb, category, date_added, description, id, location, movements, part_number, platform, pre_order_number, product_code, quantity, serial_number, stocktakeitem
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\contrib\auth\decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\inventory_system\gudang\decorators.py", line 23, in wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\inventory_system\gudang\views.py", line 104, in get_products
+    products = list(Product.objects.values(
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\query.py", line 1370, in values
+    clone = self._values(*fields, **expressions)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\query.py", line 1365, in _values
+    clone.query.set_values(fields)
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2584, in set_values
+    self.add_fields(field_names, True)
+  File "C:\Users\LENOVO\Desktop\LANCS STORAGE SYSTEM (Fix)\My_inventory\.venv\Lib\site-packages\django\db\models\sql\query.py", line 2286, in add_fields
+    raise FieldError(
+django.core.exceptions.FieldError: Cannot resolve keyword 'is_reserved' into field. Choices are: awb, category, date_added, description, id, location, movements, part_number, platform, pre_order_number, product_code, quantity, serial_number, stocktakeitem
+ERROR 2026-07-09 09:48:11,491 basehttp "GET /api/products/ HTTP/1.1" 500 145

@@ -73,6 +73,15 @@ class Product(models.Model):
     awb              = models.CharField(max_length=100, blank=True, null=True)
     date_added       = models.DateTimeField(auto_now_add=True)
 
+    # Reservation fields
+    is_reserved      = models.BooleanField(default=False)
+    reserved_by      = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reserved_products'
+    )
+    reserved_at      = models.DateTimeField(null=True, blank=True)
+    reserved_note    = models.TextField(blank=True)
+
     class Meta:
         permissions = [
             ('can_add_product',    'Can add product'),
@@ -90,61 +99,55 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.part_number} - {self.serial_number}"
 
-is_reserved    = models.BooleanField(default=False)
-reserved_by    = models.ForeignKey(
-    User, on_delete=models.SET_NULL, null=True, blank=True,
-    related_name='reserved_products'
-)
-reserved_at    = models.DateTimeField(null=True, blank=True)
-reserved_note  = models.TextField(blank=True)
 
-# Incoming Note
+# ---------------------------------------------------------------------------
+# INCOMING NOTE
+# ---------------------------------------------------------------------------
+
 class IncomingNote(models.Model):
-    note_no      = models.CharField(max_length=100, unique=True)
-    supplier     = models.CharField(max_length=200, blank=True)
-    received_by  = models.CharField(max_length=100, blank=True)
+    note_no       = models.CharField(max_length=100, unique=True)
+    supplier      = models.CharField(max_length=200, blank=True)
+    received_by   = models.CharField(max_length=100, blank=True)
     received_date = models.CharField(max_length=50, blank=True)
-    awb          = models.CharField(max_length=100, blank=True)
-    notes        = models.TextField(blank=True)
-    items_json   = models.TextField(blank=True)
-    created_by   = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    created_at   = models.DateTimeField(auto_now_add=True)
+    awb           = models.CharField(max_length=100, blank=True)
+    notes         = models.TextField(blank=True)
+    items_json    = models.TextField(blank=True)
+    created_by    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.note_no} - {self.supplier}"
 
+
 # ---------------------------------------------------------------------------
 # STOCK MOVEMENT
-# Structured record of every IN / OUT / ADJUST / ROLLBACK event on a product.
 # ---------------------------------------------------------------------------
-
 
 class StockMovement(models.Model):
     MOVEMENT_TYPES = [
-        ('IN',       'Stock In'),     # New stock received / added
-        ('OUT',      'Stock Out'),    # Withdrawn via Surat Jalan
-        ('ADJUST',   'Adjustment'),   # Manual correction (positive or negative)
-        ('ROLLBACK', 'Rollback'),     # FIX #7: Added ROLLBACK as a valid choice
+        ('IN',       'Stock In'),
+        ('OUT',      'Stock Out'),
+        ('ADJUST',   'Adjustment'),
+        ('ROLLBACK', 'Rollback'),
     ]
 
     product       = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='movements')
     movement_type = models.CharField(max_length=10, choices=MOVEMENT_TYPES)
-    quantity      = models.IntegerField()   # Positive for IN/OUT/ROLLBACK; signed delta for ADJUST
-    qty_before    = models.IntegerField()   # Stock level before this movement
-    qty_after     = models.IntegerField()   # Stock level after this movement
-    reference     = models.CharField(max_length=200, blank=True)  # e.g. SDR No, CSV filename
-    note          = models.TextField(blank=True)      # Free-text reason / context
+    quantity      = models.IntegerField()
+    qty_before    = models.IntegerField()
+    qty_after     = models.IntegerField()
+    reference     = models.CharField(max_length=200, blank=True)
+    note          = models.TextField(blank=True)
     performed_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stock_movements')
     timestamp     = models.DateTimeField(auto_now_add=True)
 
-    # FIX #3: Rollback tracking fields (mirrors Transaction rollback fields)
-    is_rolled_back  = models.BooleanField(default=False)
-    rolled_back_by  = models.ForeignKey(
+    is_rolled_back = models.BooleanField(default=False)
+    rolled_back_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='rolled_back_movements',
     )
-    rolled_back_at  = models.DateTimeField(null=True, blank=True)
-    rollback_note   = models.TextField(blank=True)
+    rolled_back_at = models.DateTimeField(null=True, blank=True)
+    rollback_note  = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-timestamp']
@@ -183,7 +186,6 @@ class Transaction(models.Model):
     transport_mode = models.CharField(max_length=50,  null=True, blank=True)
     address        = models.TextField(null=True, blank=True)
 
-    # FIX #2: Rollback tracking fields — required by rollback_transaction view
     is_rolled_back = models.BooleanField(default=False)
     rolled_back_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
@@ -197,8 +199,8 @@ class Transaction(models.Model):
             ('can_create_transaction', 'Can create Surat Jalan'),
         ]
         indexes = [
-            models.Index(fields=['sdr_no']),        # FIX #8: removed invalid '-' prefix
-            models.Index(fields=['created_at']),    # FIX #8: '-' prefix is invalid in Index(fields=[])
+            models.Index(fields=['sdr_no']),
+            models.Index(fields=['created_at']),
             models.Index(fields=['project_name']),
         ]
 
@@ -218,35 +220,40 @@ class ActivityLog(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['timestamp']),  # FIX #8: removed invalid '-' prefix
+            models.Index(fields=['timestamp']),
             models.Index(fields=['action']),
         ]
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.timestamp}"
-    
+
+
+# ---------------------------------------------------------------------------
+# STOCKTAKING
+# ---------------------------------------------------------------------------
+
 class Stocktake(models.Model):
     STATUS_CHOICES = [
         ('open',      'Open'),
         ('completed', 'Completed'),
         ('frozen',    'Frozen'),
     ]
-    date        = models.DateField()
-    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
-    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stocktakes')
-    created_at  = models.DateTimeField(auto_now_add=True)
-    notes       = models.TextField(blank=True)
+    date       = models.DateField()
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stocktakes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes      = models.TextField(blank=True)
 
     def __str__(self):
         return f"Stocktake {self.date} [{self.status}]"
 
 
 class StocktakeItem(models.Model):
-    stocktake       = models.ForeignKey(Stocktake, on_delete=models.CASCADE, related_name='items')
-    product         = models.ForeignKey(Product, on_delete=models.CASCADE)
-    system_qty      = models.IntegerField()   # qty from system at time of stocktake
-    counted_qty     = models.IntegerField(null=True, blank=True)  # actual physical count
-    discrepancy     = models.IntegerField(null=True, blank=True)  # counted - system
+    stocktake   = models.ForeignKey(Stocktake, on_delete=models.CASCADE, related_name='items')
+    product     = models.ForeignKey(Product, on_delete=models.CASCADE)
+    system_qty  = models.IntegerField()
+    counted_qty = models.IntegerField(null=True, blank=True)
+    discrepancy = models.IntegerField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if self.counted_qty is not None:
