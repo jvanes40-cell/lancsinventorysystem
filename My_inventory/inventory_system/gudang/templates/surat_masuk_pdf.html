@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page { size: a4 portrait; margin: 1.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #000; }
+        table { width: 100%; border-collapse: collapse; }
+        .header-table td { padding-bottom: 15px; border-bottom: 2px solid #000; }
+        .title { font-size: 22pt; font-weight: bold; margin-bottom: 4px; }
+        .company { font-size: 12pt; font-weight: bold; }
+        .info-table { margin-top: 18px; margin-bottom: 18px; }
+        .info-table td { padding: 6px 8px; font-size: 9pt; vertical-align: top; }
+        .info-box { border: 1px solid #000; padding: 8px; }
+        .info-box-title { font-weight: bold; font-size: 8pt; text-transform: uppercase;
+                          background: #f0f0f0; padding: 3px 6px; margin: -8px -8px 8px -8px;
+                          border-bottom: 1px solid #ccc; }
+        .items-table th { background: #f0f0f0; border: 1px solid #000; padding: 6px;
+                          text-align: left; font-size: 9pt; }
+        .items-table td { border: 1px solid #000; padding: 6px; font-size: 9pt;
+                          vertical-align: top; word-wrap: break-word; }
+        .center { text-align: center; }
+        .signature-table { margin-top: 60px; width: 100%; }
+        .signature-table td { width: 33%; text-align: center; padding-top: 8px; font-size: 9pt; }
+        .sig-line { border-top: 1px solid #000; margin-top: 50px; padding-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td style="width:60%">
+                <div class="title">SURAT MASUK BARANG</div>
+                <div class="company">PT. LANCS ARCHE CONSUMMA</div>
+                <div style="font-size:9pt; color:#555; margin-top:4px;">Warehouse Management System</div>
+            </td>
+            <td style="width:40%; text-align:right; vertical-align:bottom; font-size:9pt;">
+                <strong>No. Surat:</strong> {{ note.note_no }}<br>
+                <strong>Tanggal:</strong> {{ note.received_date|default:"-" }}<br>
+                <strong>AWB No:</strong> {{ note.awb|default:"-" }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td style="width:48%">
+                <div class="info-box">
+                    <div class="info-box-title">Informasi Supplier</div>
+                    <strong>Supplier:</strong> {{ note.supplier|default:"-" }}<br>
+                    <strong>AWB:</strong> {{ note.awb|default:"-" }}
+                </div>
+            </td>
+            <td style="width:4%"></td>
+            <td style="width:48%">
+                <div class="info-box">
+                    <div class="info-box-title">Informasi Penerimaan</div>
+                    <strong>Diterima Oleh:</strong> {{ note.received_by|default:"-" }}<br>
+                    <strong>Catatan:</strong> {{ note.notes|default:"-" }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="4%" class="center">No</th>
+                <th width="18%">Part Number</th>
+                <th width="18%">Serial Number</th>
+                <th width="26%">Description</th>
+                <th width="6%" class="center">Qty</th>
+                <th width="12%">Location</th>
+                <th width="16%">Remark</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="center">{{ forloop.counter }}</td>
+                <td>{{ item.partNumber|default:"-" }}</td>
+                <td>{{ item.serialNumber|default:"-" }}</td>
+                <td>{{ item.description|default:"-" }}</td>
+                <td class="center"><strong>{{ item.quantity }}</strong></td>
+                <td>{{ item.location|default:"-" }}</td>
+                <td>{{ item.remark|default:"&nbsp;" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="signature-table">
+        <tr>
+            <td>
+                Diserahkan Oleh,<br>
+                <div class="sig-line"><strong>( ............................ )</strong><br>Supplier Rep</div>
+            </td>
+            <td>
+                Disetujui Oleh,<br>
+                <div class="sig-line"><strong>( Harianto )</strong><br>Manager</div>
+            </td>
+            <td>
+                Diterima Oleh,<br>
+                <div class="sig-line"><strong>( {{ note.received_by|upper|default:"...................." }} )</strong><br>Staff Gudang</div>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

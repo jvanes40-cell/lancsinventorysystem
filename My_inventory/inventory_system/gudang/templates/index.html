@@ -390,21 +390,24 @@
                     </div>
 
                     <!-- ===== TAB: ENTRY ===== -->
-                    <div id="tab-entry" class="tab-content hidden fade-in">
-                        <div class="bg-white rounded-xl card-shadow border border-gray-100 mb-6">
-                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
-                                <h2 class="text-xl font-bold text-gray-900">Add New Products</h2>
-                            </div>
-                            
-                            <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row gap-4 bg-white">
-                                <button id="bulkAddBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center text-sm shadow-sm flex-1 sm:flex-none">
-                                    <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Bulk Add via CSV
-                                </button>
-                                <button id="scanProductBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center justify-center text-sm shadow-sm flex-1 sm:flex-none">
-                                    <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg> Scan Barcode
-                                </button>
-                            </div>
+                    <div id="tab-entry" class="tab-content hidden fade-in space-y-6">
 
+                        <!-- STEP 1: Product Form -->
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">📦 Add New Product</h2>
+                                    <p class="text-sm text-gray-500 mt-1">Fill in product details and add to batch. Repeat for multiple items.</p>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button id="bulkAddBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm">
+                                        <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>Bulk CSV
+                                    </button>
+                                    <button id="scanProductBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm">
+                                        <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>Scan
+                                    </button>
+                                </div>
+                            </div>
                             <div class="p-6">
                                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
                                     <div>
@@ -456,13 +459,94 @@
                                         <datalist id="location-list"></datalist>
                                     </div>
                                 </div>
-                                <div class="mt-8 flex justify-end">
-                                    <button id="addSingleBtn" class="btn bg-indigo-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-indigo-700 shadow-md flex items-center">
-                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg> Save Product
-                                    </button>
+                                <div class="mt-6 flex items-center justify-between">
+                                    <p id="addProductFeedback" class="text-sm font-medium"></p>
+                                    <div class="flex gap-3">
+                                        <button id="addSingleBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>Save Single (no note)
+                                        </button>
+                                        <button id="addToBatchBtn" class="btn bg-indigo-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-indigo-700 shadow-md flex items-center text-sm">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>Add to Batch
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- STEP 2: Batch Preview -->
+                        <div id="batchSection" class="hidden bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">🗂 Batch Items</h2>
+                                    <p class="text-sm text-gray-500 mt-1">Items queued for this Surat Masuk. Add more or proceed to generate.</p>
+                                </div>
+                                <span id="batchCount" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800">0 items</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">No</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Part Number</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Serial Number</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Remark</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Remove</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="batchItemsTable" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- STEP 3: Surat Masuk Details -->
+                        <div id="suratMasukSection" class="hidden bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                                <h2 class="text-xl font-bold text-gray-900">📄 Surat Masuk Details</h2>
+                                <p class="text-sm text-gray-500 mt-1">Fill in the receiving note details to generate the PDF.</p>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Note Number <span class="text-red-500">*</span></label>
+                                        <input id="smNoteNo" type="text" placeholder="e.g. SM-2026-001" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                                        <input id="smSupplier" type="text" placeholder="Supplier name" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">AWB / Airway Bill</label>
+                                        <input id="smAwb" type="text" placeholder="AWB number" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm uppercase-input py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Received By</label>
+                                        <input id="smReceivedBy" type="text" placeholder="Staff name" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Received Date</label>
+                                        <input id="smReceivedDate" type="date" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                        <input id="smNotes" type="text" placeholder="Optional notes" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex items-center gap-4">
+                                    <button onclick="clearBatch()" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-5 rounded-lg hover:bg-gray-50 text-sm">
+                                        Clear Batch
+                                    </button>
+                                    <button onclick="saveAllAndGenerateSuratMasuk()" class="btn bg-green-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-green-700 shadow-md flex items-center text-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        Save All & Generate Surat Masuk
+                                    </button>
+                                    <p id="smFeedback" class="text-sm font-medium"></p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- ===== TAB: SURAT JALAN ===== -->
@@ -1172,6 +1256,167 @@
             currentSuratJalan: { items: [] },
         };
 
+
+        // ============================================================
+        // BATCH + SURAT MASUK
+        // ============================================================
+
+        const batchItems = [];
+
+        function getBatchFormData() {
+            return {
+                preOrderNumber: document.getElementById('preOrderNumber').value.trim(),
+                partNumber:     document.getElementById('partNumber').value.trim(),
+                serialNumber:   document.getElementById('serialNumber').value.trim(),
+                awb:            document.getElementById('awb').value.trim(),
+                productCode:    document.getElementById('productCode').value.trim(),
+                quantity:       parseInt(document.getElementById('quantity').value) || 0,
+                description:    document.getElementById('description').value.trim(),
+                category:       document.getElementById('category').value.trim(),
+                platform:       document.getElementById('platform').value.trim(),
+                location:       document.getElementById('location').value.trim(),
+            };
+        }
+
+        function clearEntryForm() {
+            ['preOrderNumber','partNumber','serialNumber','awb','productCode',
+             'quantity','description','category','platform','location'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            const hint = document.getElementById('serialNumberHint');
+            if (hint) { hint.textContent = ''; }
+            document.getElementById('serialNumber').style.borderColor = '';
+            document.getElementById('serialNumber').style.boxShadow   = '';
+        }
+
+        function renderBatchTable() {
+            const tbody   = document.getElementById('batchItemsTable');
+            const section = document.getElementById('batchSection');
+            const smSection = document.getElementById('suratMasukSection');
+            const countEl = document.getElementById('batchCount');
+
+            if (!batchItems.length) {
+                section.classList.add('hidden');
+                smSection.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            smSection.classList.remove('hidden');
+            countEl.textContent = batchItems.length + ' item' + (batchItems.length > 1 ? 's' : '');
+
+            tbody.innerHTML = batchItems.map((item, i) =>
+                '<tr class="hover:bg-gray-50">'
+                + '<td class="px-4 py-2 text-sm text-gray-500 text-center">' + (i + 1) + '</td>'
+                + '<td class="px-4 py-2 text-sm font-medium text-gray-900">' + (item.partNumber || '-') + '</td>'
+                + '<td class="px-4 py-2 text-sm text-gray-500 mono">' + (item.serialNumber || '-') + '</td>'
+                + '<td class="px-4 py-2 text-sm text-gray-500 max-w-xs truncate">' + (item.description || '-') + '</td>'
+                + '<td class="px-4 py-2 text-sm text-center font-medium">' + item.quantity + '</td>'
+                + '<td class="px-4 py-2 text-sm text-gray-500">' + (item.location || '-') + '</td>'
+                + '<td class="px-4 py-2">'
+                + '<input type="text" placeholder="Remark" value="' + (item.remark || '') + '" data-idx="' + i + '" onchange="batchItems[parseInt(this.dataset.idx)].remark = this.value" class="w-28 rounded border-gray-300 text-xs py-1 px-2 border">'
+                + '</td>'
+                + '<td class="px-4 py-2 text-center">'
+                + '<button data-idx="' + i + '" onclick="removeBatchItem(this)" class="text-red-400 hover:text-red-600 text-xs font-medium">✕</button>'
+                + '</td>'
+                + '</tr>'
+            ).join('');
+        }
+
+        function removeBatchItem(btn) {
+            batchItems.splice(parseInt(btn.dataset.idx), 1);
+            renderBatchTable();
+        }
+
+        function clearBatch() {
+            if (batchItems.length && !confirm('Clear all ' + batchItems.length + ' items from batch?')) return;
+            batchItems.length = 0;
+            renderBatchTable();
+            ['smNoteNo','smSupplier','smAwb','smReceivedBy','smReceivedDate','smNotes'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            document.getElementById('smFeedback').textContent = '';
+        }
+
+        document.getElementById('addToBatchBtn').addEventListener('click', () => {
+            const data = getBatchFormData();
+            const fb   = document.getElementById('addProductFeedback');
+
+            if (!data.serialNumber) {
+                fb.textContent = '⚠ Serial Number wajib diisi.';
+                fb.className   = 'text-sm text-amber-600';
+                return;
+            }
+            if (!data.quantity || data.quantity < 1) {
+                fb.textContent = '⚠ Quantity harus minimal 1.';
+                fb.className   = 'text-sm text-amber-600';
+                return;
+            }
+
+            batchItems.push({ ...data, remark: '' });
+            renderBatchTable();
+            clearEntryForm();
+            fb.textContent = '✓ Item added to batch! Add more or fill Surat Masuk details below.';
+            fb.className   = 'text-sm text-green-600';
+            setTimeout(() => { fb.textContent = ''; }, 3000);
+        });
+
+        async function saveAllAndGenerateSuratMasuk() {
+            const fb     = document.getElementById('smFeedback');
+            const noteNo = document.getElementById('smNoteNo').value.trim();
+
+            if (!batchItems.length) {
+                fb.textContent = '⚠ Batch kosong. Tambahkan item terlebih dahulu.';
+                fb.className   = 'text-sm text-amber-600';
+                return;
+            }
+            if (!noteNo) {
+                fb.textContent = '⚠ Note Number wajib diisi.';
+                fb.className   = 'text-sm text-amber-600';
+                return;
+            }
+
+            fb.textContent = 'Saving...';
+            fb.className   = 'text-sm text-gray-400';
+
+            try {
+                const res  = await fetch('/api/surat-masuk/create/', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({
+                        noteNo:       noteNo,
+                        supplier:     document.getElementById('smSupplier').value.trim(),
+                        awb:          document.getElementById('smAwb').value.trim(),
+                        receivedBy:   document.getElementById('smReceivedBy').value.trim(),
+                        receivedDate: document.getElementById('smReceivedDate').value,
+                        notes:        document.getElementById('smNotes').value.trim(),
+                        items:        batchItems,
+                    }),
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    fb.textContent = '✓ ' + data.message;
+                    fb.className   = 'text-sm text-green-600';
+
+                    // Open PDF in new tab
+                    window.open('/api/surat-masuk-pdf/' + encodeURIComponent(noteNo) + '/', '_blank');
+
+                    // Clear everything
+                    clearBatch();
+                    clearEntryForm();
+                    fetchProducts();
+                } else {
+                    fb.textContent = '❌ ' + data.message;
+                    fb.className   = 'text-sm text-red-600';
+                }
+            } catch (err) {
+                fb.textContent = '❌ ' + err.message;
+                fb.className   = 'text-sm text-red-600';
+            }
+        }
+
         // --------------- ELEMENT CACHE ---------------
         const elements = {
             tabButtons: document.querySelectorAll('.tab-btn'),
@@ -1722,7 +1967,6 @@
             else if (tabId === 'products')           renderProductList();
             else if (tabId === 'surat-jalan')        clearSuratJalanForm();
             else if (tabId === 'withdrawal-history') renderSuratJalanHistory();
-            else if (tabId === 'incoming')           fetchIncomingNotes();
             else if (tabId === 'stocktaking')        fetchStocktakes();
             else if (tabId === 'reservations')       renderReservations();
         }
@@ -2150,35 +2394,39 @@
             if (typeFilter) rows = rows.filter(m => m.movement_type === typeFilter);
 
             if (!rows.length) {
-                tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">No movements found.</td></tr>`;
+                tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-10 text-center text-sm text-gray-400">No movements found.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = rows.map(m => `
-                <tr class="hover:bg-gray-50 transition-colors ${m.is_rolled_back ? 'opacity-50' : ''}">
-                    <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${m.timestamp}</td>
-                    <td class="px-4 py-3 text-sm font-mono text-gray-800">${m.serial_number}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${m.part_number}</td>
-                    <td class="px-4 py-3">${smTypeBadge(m.movement_type)}${m.is_rolled_back ? ' <span class="text-xs text-gray-400 italic">rolled back</span>' : ''}</td>
-                    <td class="px-4 py-3 text-right">${smFmtQty(m.movement_type, m.quantity)}</td>
-                    <td class="px-4 py-3 text-right text-sm text-gray-400">${m.qty_before}</td>
-                    <td class="px-4 py-3 text-right text-sm font-semibold text-gray-700">${m.qty_after}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500">${m.reference || '—'}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500 max-w-[160px] truncate" title="${m.note || ''}">${m.note || '—'}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500">${m.performed_by}</td>
-                    <td class="px-4 py-3 text-center">
-                        ${m.is_rolled_back || m.movement_type === 'ROLLBACK'
-                            ? '<span class="text-xs text-gray-300">—</span>'
-                            : `<button class="rollback-mvt-btn text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition"
-                                data-id="${m.id}"
-                                data-label="${m.movement_type} | ${m.serial_number}"
-                                title="Rollback this movement">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                               </button>`
-                        }
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = rows.map(function(m) {
+                const rolledBackClass = m.is_rolled_back ? 'opacity-50' : '';
+                const rolledBackBadge = m.is_rolled_back ? ' <span class="text-xs text-gray-400 italic">rolled back</span>' : '';
+                const noteText    = m.note || '-';
+                const refText     = m.reference || '-';
+                const undoCell    = (m.is_rolled_back || m.movement_type === 'ROLLBACK')
+                    ? '<span class="text-xs text-gray-300">-</span>'
+                    : '<button class="rollback-mvt-btn text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition"'
+                      + ' data-id="' + m.id + '"'
+                      + ' data-label="' + m.movement_type + ' | ' + (m.serial_number || '') + '"'
+                      + ' title="Rollback this movement">'
+                      + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                      + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>'
+                      + '</svg></button>';
+
+                return '<tr class="hover:bg-gray-50 transition-colors ' + rolledBackClass + '">'
+                    + '<td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">' + (m.timestamp || '') + '</td>'
+                    + '<td class="px-4 py-3 text-sm font-mono text-gray-800">' + (m.serial_number || '') + '</td>'
+                    + '<td class="px-4 py-3 text-sm text-gray-700">' + (m.part_number || '') + '</td>'
+                    + '<td class="px-4 py-3">' + smTypeBadge(m.movement_type) + rolledBackBadge + '</td>'
+                    + '<td class="px-4 py-3 text-right">' + smFmtQty(m.movement_type, m.quantity) + '</td>'
+                    + '<td class="px-4 py-3 text-right text-sm text-gray-400">' + m.qty_before + '</td>'
+                    + '<td class="px-4 py-3 text-right text-sm font-semibold text-gray-700">' + m.qty_after + '</td>'
+                    + '<td class="px-4 py-3 text-xs text-gray-500">' + refText + '</td>'
+                    + '<td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="' + noteText + '">' + noteText + '</td>'
+                    + '<td class="px-4 py-3 text-xs text-gray-500">' + (m.performed_by || '') + '</td>'
+                    + '<td class="px-4 py-3 text-center">' + undoCell + '</td>'
+                    + '</tr>';
+            }).join('');
         }
 
         function clearSMFilters() {
@@ -2450,7 +2698,7 @@
                     closeRollbackModal();
                 } catch (err) {
                     fb.className   = 'text-sm text-red-600 mt-2';
-                    fb.textContent = `❌ ${err.message}`;
+                    fb.textContent = '❌ ' + err.message;
                     btn.disabled   = false;
                 }
             });
@@ -2461,10 +2709,10 @@
             if (!btn) return;
             const sdrNo = btn.dataset.sdr;
             showRollbackConfirm({
-                title:       `Rollback Surat Jalan ${sdrNo}`,
-                description: `This will return ALL items from Surat Jalan ${sdrNo} back to stock. This cannot be undone.`,
+                title:       'Rollback Surat Jalan ' + sdrNo,
+                description: 'This will return ALL items from Surat Jalan ' + sdrNo + ' back to stock. This cannot be undone.',
                 onConfirm:   async (note) => {
-                    const res  = await fetch(`/api/rollback-transaction/${encodeURIComponent(sdrNo)}/`, {
+                    const res  = await fetch('/api/rollback-transaction/' + encodeURIComponent(sdrNo) + '/', {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                         body:    JSON.stringify({ note }),
@@ -2484,12 +2732,12 @@
             const btn = e.target.closest('.rollback-mvt-btn');
             if (!btn) return;
             const mvtId = btn.dataset.id;
-            const label = btn.dataset.label || `Movement #${mvtId}`;
+            const label = btn.dataset.label || ('Movement #' + mvtId);
             showRollbackConfirm({
-                title:       `Rollback ${label}`,
-                description: `This will reverse movement #${mvtId} and create a compensating entry in the history.`,
+                title:       'Rollback ' + label,
+                description: 'This will reverse movement #' + mvtId + ' and create a compensating entry in the history.',
                 onConfirm:   async (note) => {
-                    const res  = await fetch(`/api/rollback-movement/${mvtId}/`, {
+                    const res  = await fetch('/api/rollback-movement/' + mvtId + '/', {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                         body:    JSON.stringify({ note }),
@@ -2709,6 +2957,7 @@
         </div>
     </div>
 
+    <script>
         // ============================================================
         // FEATURE 4: RESERVATIONS
         // ============================================================
@@ -2925,7 +3174,7 @@
                     const cqVal     = (item.counted_qty !== null && item.counted_qty !== undefined) ? item.counted_qty : '';
                     const countedInput = isCompleted
                         ? '<span class="font-medium">' + cqDisplay + '</span>'
-                        : '<input type="number" min="0" value="' + cqVal + '" placeholder="-" onchange="updateStocktakeCount(' + item.id + ', this.value)" class="w-20 text-center rounded border-gray-300 text-sm py-1 px-2 border">';
+                        : '<input type="number" min="0" value="' + (cqVal || '') + '" placeholder="0" onchange="updateStocktakeCount(' + item.id + ', this.value)" class="w-20 text-center rounded border-gray-300 text-sm py-1 px-2 border">';
 
                     const rowBg = diff === null ? '' : diff === 0 ? 'bg-green-50' : 'bg-amber-50';
                     return '<tr class="' + rowBg + '">'
@@ -3063,7 +3312,7 @@
                     + '<p class="text-xs text-gray-500">' + (item.description || '-') + '</p>'
                     + '</div>'
                     + '<div class="flex items-center gap-3 ml-4">'
-                    + '<input type="number" min="1" value="' + item.quantity + '" data-idx="' + i + '" onchange="updateIncomingQty(this)" class="w-16 text-center rounded border-gray-300 text-sm py-1 border">'
+                    + '<input type="number" min="1" value="' + (item.quantity || 1) + '" data-idx="' + i + '" onchange="updateIncomingQty(this)" class="w-16 text-center rounded border-gray-300 text-sm py-1 border">'
                     + '<input type="text" placeholder="Remark" value="' + (item.remark||'') + '" data-idx="' + i + '" onchange="updateIncomingRemark(this)" class="w-28 rounded border-gray-300 text-sm py-1 px-2 border">'
                     + '<button data-idx="' + i + '" onclick="removeIncomingItem(this)" class="text-red-400 hover:text-red-600">'
                     + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'

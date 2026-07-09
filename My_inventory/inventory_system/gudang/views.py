@@ -1383,3 +1383,103 @@ def export_incoming_note_pdf(request, note_no):
     log_action(request.user, 'PRINT_PDF',
         f"Printed Incoming Note PDF: {note_no}")
     return response
+
+@csrf_exempt
+@login_required
+@staff_required
+def create_surat_masuk(request):
+    """Save batch of new products and generate Surat Masuk PDF."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import IncomingNote
+        data    = json.loads(request.body)
+        note_no = data.get('noteNo', '').strip()
+        items   = data.get('items', [])
+
+        if not note_no:
+            return JsonResponse({'status': 'error', 'message': 'Note Number wajib diisi.'})
+        if not items:
+            return JsonResponse({'status': 'error', 'message': 'Batch kosong.'})
+        if IncomingNote.objects.filter(note_no=note_no).exists():
+            return JsonResponse({'status': 'error', 'message': f'Note {note_no} sudah ada.'})
+
+        with db_transaction.atomic():
+            # Save all products to inventory
+            saved_items = []
+            for item in items:
+                product = Product.objects.create(
+                    pre_order_number = item.get('preOrderNumber', ''),
+                    part_number      = item.get('partNumber', ''),
+                    serial_number    = item.get('serialNumber', ''),
+                    product_code     = item.get('productCode', ''),
+                    awb              = item.get('awb', ''),
+                    description      = item.get('description', ''),
+                    quantity         = int(item.get('quantity', 0)),
+                    category         = item.get('category', ''),
+                    platform         = item.get('platform', ''),
+                    location         = item.get('location', ''),
+                )
+                StockMovement.objects.create(
+                    product       = product,
+                    movement_type = 'IN',
+                    quantity      = product.quantity,
+                    qty_before    = 0,
+                    qty_after     = product.quantity,
+                    reference     = note_no,
+                    note          = f"Surat Masuk {note_no} | Supplier: {data.get('supplier', '-')}",
+                    performed_by  = request.user,
+                )
+                saved_items.append({
+                    'partNumber':   product.part_number,
+                    'serialNumber': product.serial_number,
+                    'description':  product.description,
+                    'quantity':     product.quantity,
+                    'location':     product.location,
+                    'remark':       item.get('remark', ''),
+                })
+
+            # Save Surat Masuk record
+            IncomingNote.objects.create(
+                note_no       = note_no,
+                supplier      = data.get('supplier', ''),
+                received_by   = data.get('receivedBy', ''),
+                received_date = data.get('receivedDate', ''),
+                awb           = data.get('awb', ''),
+                notes         = data.get('notes', ''),
+                items_json    = json.dumps(saved_items),
+                created_by    = request.user,
+            )
+
+        log_action(request.user, 'SURAT_MASUK',
+            f"Surat Masuk {note_no} | {len(items)} items | Supplier: {data.get('supplier', '-')}")
+        return JsonResponse({
+            'status':  'success',
+            'message': f'Surat Masuk {note_no} berhasil dibuat! {len(items)} produk disimpan.'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+def export_surat_masuk_pdf(request, note_no):
+    """Generate Surat Masuk PDF."""
+    from .models import IncomingNote
+    note  = get_object_or_404(IncomingNote, note_no=note_no)
+    items = json.loads(note.items_json)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="SM_{note_no}.pdf"'
+
+    template    = get_template('surat_masuk_pdf.html')
+    html        = template.render({
+        'note':  note,
+        'items': items,
+        'generated_by': request.user.username,
+    })
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=400)
+
+    log_action(request.user, 'PRINT_PDF', f"Printed Surat Masuk PDF: {note_no}")
+    return response

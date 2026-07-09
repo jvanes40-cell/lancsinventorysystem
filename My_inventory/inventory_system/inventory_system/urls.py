@@ -66,6 +66,10 @@ urlpatterns = [
      
      # --- Incoming Notes ---
      path('api/incoming-notes/',              views.get_incoming_notes,       name='get_incoming_notes'),
-path('api/incoming-notes/create/',       views.add_incoming_note,        name='add_incoming_note'),
-path('api/incoming-note-pdf/<path:note_no>/', views.export_incoming_note_pdf, name='incoming_note_pdf'),
-]
+     path('api/incoming-notes/create/',       views.add_incoming_note,        name='add_incoming_note'),
+     path('api/incoming-note-pdf/<path:note_no>/', views.export_incoming_note_pdf, name='incoming_note_pdf'),
+
+     # --- Surat Masuk ---
+     path('api/surat-masuk/create/',              views.create_surat_masuk,      name='create_surat_masuk'),
+     path('api/surat-masuk-pdf/<path:note_no>/',  views.export_surat_masuk_pdf,  name='export_surat_masuk_pdf'),
+     ]
