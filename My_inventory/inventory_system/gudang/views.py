@@ -1,4 +1,3 @@
-from itertools import product
 import json
 import csv
 from django.db import transaction as db_transaction
@@ -203,8 +202,11 @@ def get_stock_movements(request):
 @login_required
 @manager_or_staff_required
 def get_product_movement_summary(request, serial_number):
-    product   = get_object_or_404(Product, serial_number=serial_number)
-    movements = StockMovement.objects.filter(product=product).order_by('-timestamp')
+    # Use filter+first to handle duplicate serial numbers gracefully
+    product = Product.objects.filter(serial_number=serial_number).first()
+    if not product:
+        return JsonResponse({"error": f"Product SN {serial_number} tidak ditemukan."}, status=404)
+    movements = StockMovement.objects.filter(product=product).order_by("-timestamp")
 
     total_in     = sum(m.quantity for m in movements if m.movement_type == 'IN')
     total_out    = sum(m.quantity for m in movements if m.movement_type == 'OUT')
@@ -276,29 +278,34 @@ def adjust_stock(request):
         if adjustment == 0:
             return JsonResponse({'status': 'error', 'message': 'Adjustment tidak boleh 0.'})
 
-        product    = Product.objects.get(serial_number=serial)
-        qty_before = product.quantity
-        new_qty    = qty_before + adjustment
+        with db_transaction.atomic():
+            # Use select_for_update to prevent race conditions
+            product = Product.objects.select_for_update().filter(serial_number=serial).first()
+            if not product:
+                return JsonResponse({"status": "error", "message": f"Product SN {serial} tidak ditemukan."})
 
-        if new_qty < 0:
-            return JsonResponse({
-                'status':  'error',
-                'message': f'Stok tidak boleh negatif. Stok sekarang: {qty_before}, adjustment: {adjustment}.',
-            })
+            qty_before = product.quantity
+            new_qty    = qty_before + adjustment
 
-        product.quantity = new_qty
-        product.save()
+            if new_qty < 0:
+                return JsonResponse({
+                    'status':  'error',
+                    'message': f'Stok tidak boleh negatif. Stok sekarang: {qty_before}, adjustment: {adjustment}.',
+                })
 
-        StockMovement.objects.create(
-            product       = product,
-            movement_type = 'ADJUST',
-            quantity      = adjustment,
-            qty_before    = qty_before,
-            qty_after     = new_qty,
-            reference     = 'Manual Adjustment',
-            note          = note or 'No reason provided',
-            performed_by  = request.user,
-        )
+            product.quantity = new_qty
+            product.save()
+
+            StockMovement.objects.create(
+                product       = product,
+                movement_type = 'ADJUST',
+                quantity      = adjustment,
+                qty_before    = qty_before,
+                qty_after     = new_qty,
+                reference     = 'Manual Adjustment',
+                note          = note or 'No reason provided',
+                performed_by  = request.user,
+            )
 
         direction = f"+{adjustment}" if adjustment > 0 else str(adjustment)
         log_action(
@@ -314,8 +321,6 @@ def adjust_stock(request):
             'qty_after':  new_qty,
         })
 
-    except Product.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Produk tidak ditemukan.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
 
@@ -630,35 +635,41 @@ def edit_transaction(request):
 
         old_items = json.loads(trx.items_json)
 
+        # Use productId-based maps to avoid data collision with duplicate serial numbers
         old_qty_map = {}
         for item in old_items:
-            sn = item.get('serialNumber', '')
-            old_qty_map[sn] = old_qty_map.get(sn, 0) + int(item.get('quantity', 0))
+            pid = item.get('productId') or item.get('id')
+            if pid:
+                old_qty_map[pid] = old_qty_map.get(pid, 0) + int(item.get('quantity', 0))
 
         new_qty_map = {}
         for item in new_items:
-            sn = item.get('serialNumber', '')
-            new_qty_map[sn] = new_qty_map.get(sn, 0) + int(item.get('quantity', 0))
+            pid = item.get('productId') or item.get('id')
+            if pid:
+                new_qty_map[pid] = new_qty_map.get(pid, 0) + int(item.get('quantity', 0))
 
-        all_serials = set(old_qty_map) | set(new_qty_map)
-        products    = {p.serial_number: p for p in Product.objects.filter(serial_number__in=all_serials)}
+        all_ids  = set(old_qty_map) | set(new_qty_map)
+        products = {
+            p.id: p
+            for p in Product.objects.select_for_update().filter(id__in=all_ids)
+        }
 
         net_delta = {}
-        for sn in all_serials:
-            net_delta[sn] = old_qty_map.get(sn, 0) - new_qty_map.get(sn, 0)
+        for pid in all_ids:
+            net_delta[pid] = old_qty_map.get(pid, 0) - new_qty_map.get(pid, 0)
 
-        for sn, delta in net_delta.items():
+        for pid, delta in net_delta.items():
             if delta >= 0:
                 continue
-            product = products.get(sn)
+            product = products.get(pid)
             if not product:
-                return JsonResponse({'status': 'error', 'message': f'Produk SN: {sn} tidak ditemukan.'})
+                return JsonResponse({'status': 'error', 'message': f'Produk ID {pid} tidak ditemukan.'})
             extra_needed = abs(delta)
             if product.quantity < extra_needed:
                 return JsonResponse({
                     'status':  'error',
                     'message': (
-                        f'Stok tidak cukup untuk {product.part_number} (SN: {sn}). '
+                        f'Stok tidak cukup untuk {product.part_number} (SN: {product.serial_number}). '
                         f'Tersedia: {product.quantity}, butuh tambahan: {extra_needed}.'
                     ),
                 })
@@ -666,10 +677,10 @@ def edit_transaction(request):
         project_name = data.get('projectName', trx.project_name)
 
         with db_transaction.atomic():
-            for sn, delta in net_delta.items():
+            for pid, delta in net_delta.items():
                 if delta == 0:
                     continue
-                product    = products[sn]
+                product    = products[pid]
                 qty_before = product.quantity
                 product.quantity += delta
                 product.save()
@@ -688,7 +699,7 @@ def edit_transaction(request):
                 direction = f"+{delta}" if delta > 0 else str(delta)
                 log_action(
                     request.user, 'SJ_EDIT_STOCK',
-                    f"Stock corrected for SN: {sn} ({product.part_number}) | "
+                    f"Stock corrected for SN: {product.serial_number} ({product.part_number}) | "
                     f"Delta: {direction} | {qty_before} → {product.quantity} | SJ: {sdr_no}",
                 )
 
@@ -743,15 +754,15 @@ def bulk_add_products(request):
                 serial  = row.get('serialNumber', '').strip()
 
                 old_qty = 0
-                try:
-                    existing = Product.objects.get(serial_number=serial)
-                    old_qty  = existing.quantity
-                except Product.DoesNotExist:
-                    pass
+                existing = Product.objects.filter(serial_number=serial).first()
+                if existing:
+                    old_qty = existing.quantity
 
-                obj, created = Product.objects.update_or_create(
-                    serial_number=serial,
-                    defaults={
+                # Use id-based update if existing found to avoid duplicate SN collision
+                if existing:
+                    obj     = existing
+                    created = False
+                    for field, val in {
                         'pre_order_number': row.get('preOrderNumber', ''),
                         'part_number':      row.get('partNumber', ''),
                         'product_code':     row.get('productCode', ''),
@@ -761,9 +772,23 @@ def bulk_add_products(request):
                         'category':         row.get('category', ''),
                         'platform':         row.get('platform', ''),
                         'location':         row.get('location', ''),
-                    },
-                )
-
+                    }.items():
+                        setattr(obj, field, val)
+                    obj.save()
+                else:
+                    obj = Product.objects.create(
+                        serial_number    = serial,
+                        pre_order_number = row.get('preOrderNumber', ''),
+                        part_number      = row.get('partNumber', ''),
+                        product_code     = row.get('productCode', ''),
+                        awb              = row.get('awb', ''),
+                        description      = row.get('description', ''),
+                        quantity         = qty_val,
+                        category         = row.get('category', ''),
+                        platform         = row.get('platform', ''),
+                        location         = row.get('location', ''),
+                    )
+                    created = True
                 # FIX #10: Use abs() for quantity so StockMovement.quantity is
                 # always a positive number; the movement_type conveys direction.
                 qty_delta = qty_val - old_qty
@@ -848,8 +873,12 @@ def rollback_transaction(request, sdr_no):
         if not items:
             return JsonResponse({'status': 'error', 'message': 'Surat Jalan ini tidak memiliki item.'})
 
-        serials  = [i.get('serialNumber', '') for i in items]
-        products = {p.serial_number: p for p in Product.objects.filter(serial_number__in=serials)}
+        # Use productId for lookup to avoid collision with duplicate serial numbers
+        product_ids = [i.get('productId') or i.get('id') for i in items if i.get('productId') or i.get('id')]
+        products_by_id = {
+            p.id: p
+            for p in Product.objects.select_for_update().filter(id__in=product_ids)
+        }
 
         from django.utils import timezone
 
@@ -857,7 +886,11 @@ def rollback_transaction(request, sdr_no):
             for item in items:
                 serial     = item.get('serialNumber', '')
                 qty_return = int(item.get('quantity', 0))
-                product    = products.get(serial)
+                pid        = item.get('productId') or item.get('id')
+                product    = products_by_id.get(pid)
+                if not product:
+                    # Fallback to serial number lookup for old transactions without productId
+                    product = Product.objects.filter(serial_number=serial).first()
 
                 if not product:
                     log_action(
@@ -1324,23 +1357,26 @@ def add_incoming_note(request):
                 qty = int(item.get('quantity', 0))
                 if not sn or qty <= 0:
                     continue
+                pid = item.get('productId')
+                if not pid:
+                    return JsonResponse({'status': 'error', 'message': f'Item {sn} tidak memiliki productId.'})
                 try:
-                    product    = Product.objects.get(id=item.get('productId'))
-                    qty_before = product.quantity
-                    product.quantity += qty
-                    product.save()
-                    StockMovement.objects.create(
-                        product       = product,
-                        movement_type = 'IN',
-                        quantity      = qty,
-                        qty_before    = qty_before,
-                        qty_after     = product.quantity,
-                        reference     = note_no,
-                        note          = f"Incoming Note {note_no} | Supplier: {data.get('supplier', '-')}",
-                        performed_by  = request.user,
-                    )
+                    product = Product.objects.select_for_update().get(id=pid)
                 except Product.DoesNotExist:
-                    continue
+                    return JsonResponse({'status': 'error', 'message': f'Produk ID {pid} tidak ditemukan.'})
+                qty_before       = product.quantity
+                product.quantity += qty
+                product.save()
+                StockMovement.objects.create(
+                    product       = product,
+                    movement_type = 'IN',
+                    quantity      = qty,
+                    qty_before    = qty_before,
+                    qty_after     = product.quantity,
+                    reference     = note_no,
+                    note          = f"Incoming Note {note_no} | Supplier: {data.get('supplier', '-')}",
+                    performed_by  = request.user,
+                )
 
         log_action(request.user, 'INCOMING',
             f"Incoming Note {note_no} | Supplier: {data.get('supplier', '-')} | {len(items)} items")
@@ -1408,14 +1444,19 @@ def create_surat_masuk(request):
             # Save all products to inventory
             saved_items = []
             for item in items:
+                qty_val = int(item.get('quantity', 0))
+                if qty_val <= 0:
+                    return JsonResponse({'status': 'error', 'message': f'Quantity harus lebih dari 0.'})
+                if not item.get('serialNumber', '').strip():
+                    return JsonResponse({'status': 'error', 'message': 'Serial Number wajib diisi untuk setiap item.'})
                 product = Product.objects.create(
                     pre_order_number = item.get('preOrderNumber', ''),
                     part_number      = item.get('partNumber', ''),
-                    serial_number    = item.get('serialNumber', ''),
+                    serial_number    = item.get('serialNumber', '').strip(),
                     product_code     = item.get('productCode', ''),
                     awb              = item.get('awb', ''),
                     description      = item.get('description', ''),
-                    quantity         = int(item.get('quantity', 0)),
+                    quantity         = qty_val,
                     category         = item.get('category', ''),
                     platform         = item.get('platform', ''),
                     location         = item.get('location', ''),

@@ -2061,8 +2061,8 @@
             const sn  = btn.dataset.serialNumber;
             pendingItemToAdd = state.products.find(x => x.id === pid) || state.products.find(x => x.serialNumber === sn);
             if (pendingItemToAdd) {
-                elements.qtyModalTitle.textContent = `Set Quantity: ${pendingItemToAdd.partNumber}`;
-                elements.qtyModalMaxText.textContent = `Max available: ${pendingItemToAdd.quantity} units`;
+                elements.qtyModalTitle.textContent = 'Set Quantity: ' + pendingItemToAdd.partNumber;
+                elements.qtyModalMaxText.textContent = 'Max available: ' + pendingItemToAdd.quantity + ' units';
                 elements.qtyInput.value = 1;
                 elements.qtyInput.max = pendingItemToAdd.quantity;
                 toggleModal(elements.selectItemModal, false);
@@ -2074,7 +2074,7 @@
             const qty = parseInt(elements.qtyInput.value, 10);
             if (!pendingItemToAdd) return;
             if (isNaN(qty) || qty < 1 || qty > pendingItemToAdd.quantity) {
-                alert(`Invalid quantity. Must be between 1 and ${pendingItemToAdd.quantity}.`);
+                alert('Invalid quantity. Must be between 1 and ' + pendingItemToAdd.quantity + '.');
                 return;
             }
             state.currentSuratJalan.items.push({ ...pendingItemToAdd, productId: pendingItemToAdd.id, quantity: qty, remark: '' });
@@ -2108,7 +2108,7 @@
 
                 let tableHtml = `
                     <tr class="bg-green-50/50">
-                        <td class="px-6 py-4 text-sm">${product.dateAdded?.split('T')[0] || '-'}</td>
+                        <td class="px-6 py-4 text-sm">${(product.dateAdded || '').split('T')[0] || '-'}</td>
                         <td class="px-6 py-4 text-sm font-bold text-green-700">INCOMING</td>
                         <td class="px-6 py-4 text-sm">Initial Stock</td>
                         <td class="px-6 py-4 text-sm">-</td>
@@ -2363,7 +2363,7 @@
             if (type) params.set('type', type);
 
             try {
-                const res  = await fetch(`/api/stock-movements/?${params}`);
+                const res  = await fetch('/api/stock-movements/?' + params);
                 const data = await res.json();
 
         // Filter by search term across serial number, part number, and product code
@@ -2523,27 +2523,35 @@
                 tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400">No items. Add one below.</td></tr>`;
                 return;
             }
-            tbody.innerHTML = editSjData.items.map((item, i) => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.partNumber}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500 font-mono">${item.serialNumber}</td>
-                    <td class="px-4 py-3">
-                        <input type="number" min="1" value="${item.quantity}"
-                            class="w-20 rounded border-gray-300 text-sm py-1 px-2 border text-center"
-                            onchange="editSjData.items[${i}].quantity = parseInt(this.value) || 1">
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="removeEditSjItem(${i})"
-                            class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </td>
-                </tr>`).join('');
+            tbody.innerHTML = editSjData.items.map(function(item, i) {
+                return '<tr class="hover:bg-gray-50">'
+                    + '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + (item.partNumber || '') + '</td>'
+                    + '<td class="px-4 py-3 text-sm text-gray-500 font-mono">' + (item.serialNumber || '') + '</td>'
+                    + '<td class="px-4 py-3">'
+                    + '<input type="number" min="1" value="' + item.quantity + '"'
+                    + ' class="w-20 rounded border-gray-300 text-sm py-1 px-2 border text-center"'
+                    + ' data-idx="' + i + '" onchange="updateEditSjQty(this)">'
+                    + '</td>'
+                    + '<td class="px-4 py-3 text-center">'
+                    + '<button data-idx="' + i + '" onclick="removeEditSjItemByBtn(this)"'
+                    + ' class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition">'
+                    + '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+                    + '</button>'
+                    + '</td>'
+                    + '</tr>';
+            }).join('');
         }
 
         function removeEditSjItem(index) {
             editSjData.items.splice(index, 1);
             renderEditSjItems();
+        }
+        function removeEditSjItemByBtn(btn) {
+            editSjData.items.splice(parseInt(btn.dataset.idx), 1);
+            renderEditSjItems();
+        }
+        function updateEditSjQty(input) {
+            editSjData.items[parseInt(input.dataset.idx)].quantity = parseInt(input.value) || 1;
         }
 
         // Add item from existing products
@@ -2561,7 +2569,7 @@
                         <td class="px-4 py-3 text-sm font-medium text-gray-900">${p.partNumber}</td>
                         <td class="px-4 py-3 text-sm font-mono text-gray-500">${p.serialNumber}</td>
                         <td class="px-4 py-3 text-center">
-                            <button onclick="addEditSjItem('${p.serialNumber}')"
+                            <button onclick="addEditSjItem(${p.id})"
                                 class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">
                                 + Add
                             </button>
@@ -2569,14 +2577,15 @@
                     </tr>`).join('');
         }
 
-        function addEditSjItem(serialNumber) {
-            const product = state.products.find(p => p.serialNumber === serialNumber);
+        function addEditSjItem(productId) {
+            const product = state.products.find(p => p.id === productId);
             if (!product) return;
-            const existing = editSjData.items.find(i => i.serialNumber === serialNumber);
+            const existing = editSjData.items.find(i => i.productId === productId);
             if (existing) {
                 existing.quantity = Math.min(existing.quantity + 1, product.quantity);
             } else {
                 editSjData.items.push({
+                    productId:    product.id,
                     partNumber:   product.partNumber,
                     serialNumber: product.serialNumber,
                     quantity:     1,
@@ -2698,7 +2707,7 @@
                     closeRollbackModal();
                 } catch (err) {
                     fb.className   = 'text-sm text-red-600 mt-2';
-                    fb.textContent = '❌ ' + err.message;
+                    fb.textContent = `❌ ${err.message}`;
                     btn.disabled   = false;
                 }
             });
@@ -2957,7 +2966,6 @@
         </div>
     </div>
 
-    <script>
         // ============================================================
         // FEATURE 4: RESERVATIONS
         // ============================================================
@@ -3154,7 +3162,7 @@
             document.getElementById('stocktakeItemsTable').innerHTML =
                 `<tr><td colspan="8" class="px-6 py-8 text-center text-sm text-gray-400">Loading...</td></tr>`;
             try {
-                const res  = await fetch(`/api/stocktakes/${id}/`);
+                const res  = await fetch('/api/stocktakes/' + id + '/');
                 const data = await res.json();
                 document.getElementById('stDetailTitle').textContent  = `Stocktake — ${data.date}`;
                 document.getElementById('stDetailStatus').textContent = `Status: ${data.status} · ${data.total_items} items`;
@@ -3196,7 +3204,7 @@
 
         async function updateStocktakeCount(itemId, countedQty) {
             try {
-                await fetch(`/api/stocktakes/${currentStocktakeId}/count/`, {
+                await fetch('/api/stocktakes/' + currentStocktakeId + '/count/', {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                     body:    JSON.stringify({ itemId, countedQty: parseInt(countedQty) }),
@@ -3211,7 +3219,7 @@
         async function completeStocktake() {
             if (!confirm('Mark this stocktake as completed? You will no longer be able to update counts.')) return;
             try {
-                const res  = await fetch(`/api/stocktakes/${currentStocktakeId}/complete/`, {
+                const res  = await fetch('/api/stocktakes/' + currentStocktakeId + '/complete/', {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                     body:    JSON.stringify({}),
@@ -3231,7 +3239,7 @@
 
         function exportStocktakePdf() {
             if (!currentStocktakeId) return;
-            window.open(`/api/stocktakes/${currentStocktakeId}/pdf/`, '_blank');
+            window.open('/api/stocktakes/' + currentStocktakeId + '/pdf/', '_blank');
         }
 
         // ============================================================
@@ -3286,7 +3294,7 @@
 
             // Add to incoming items list
             incomingItems.push({
-                productId:    item.id,
+                productId:    item.productId || item.id,
                 serialNumber: item.serialNumber,
                 partNumber:   item.partNumber,
                 description:  item.description,
