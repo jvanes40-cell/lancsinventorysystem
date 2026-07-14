@@ -22,8 +22,6 @@ urlpatterns = [
     path('api/edit-product/',    views.edit_product,      name='edit_product'),
     path('api/delete-product/',  views.delete_product,    name='delete_product'),
     path('api/bulk-add/',        views.bulk_add_products, name='bulk_add_products'),
-    path('api/reserve-product/',  views.reserve_product,  name='reserve_product'),
-    path('api/release-product/',  views.release_product,  name='release_product'),
 
     # --- TRANSACTIONS ---
     path('api/transactions/',     views.get_transactions,  name='get_transactions'),
@@ -38,7 +36,6 @@ urlpatterns = [
     path('api/stock-movements/',
          views.get_stock_movements,
          name='get_stock_movements'),
-    # FIX: Use <path:> instead of <str:> to support serial numbers containing slashes
     path('api/stock-movements/<path:serial_number>/',
          views.get_product_movement_summary,
          name='get_product_movement_summary'),
@@ -47,7 +44,6 @@ urlpatterns = [
          name='adjust_stock'),
 
     # --- ROLLBACK ---
-    # FIX: Use <path:> instead of <str:> to support SDR numbers containing slashes
     path('api/rollback-transaction/<path:sdr_no>/',
          views.rollback_transaction,
          name='rollback_transaction'),
@@ -56,20 +52,14 @@ urlpatterns = [
          name='rollback_movement'),
 
     # --- PDF EXPORT ---
-    # FIX: Use <path:> instead of <str:> to support SDR numbers containing slashes
     path('api/print-surat-jalan/<path:sdr_no>/',
          views.print_surat_jalan,
          name='print_surat_jalan'),
     path('api/export-pdf/<path:sdr_no>/',
          views.print_surat_jalan,
          name='export_pdf'),
-     
-     # --- Incoming Notes ---
-     path('api/incoming-notes/',              views.get_incoming_notes,       name='get_incoming_notes'),
-     path('api/incoming-notes/create/',       views.add_incoming_note,        name='add_incoming_note'),
-     path('api/incoming-note-pdf/<path:note_no>/', views.export_incoming_note_pdf, name='incoming_note_pdf'),
 
-     # --- Surat Masuk ---
-     path('api/surat-masuk/create/',              views.create_surat_masuk,      name='create_surat_masuk'),
-     path('api/surat-masuk-pdf/<path:note_no>/',  views.export_surat_masuk_pdf,  name='export_surat_masuk_pdf'),
-     ]
+    # --- SURAT MASUK ---
+    path('api/surat-masuk/create/',             views.create_surat_masuk,     name='create_surat_masuk'),
+    path('api/surat-masuk-pdf/<path:note_no>/', views.export_surat_masuk_pdf, name='export_surat_masuk_pdf'),
+]
