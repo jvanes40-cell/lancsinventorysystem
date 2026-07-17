@@ -1465,7 +1465,7 @@
                 datalistFields.forEach(field => { if (product[field]) uniqueValues[field].add(product[field]); });
             });
             datalistFields.forEach(field => {
-                const datalist = document.getElementById(`${field}-list`);
+                const datalist = document.getElementById(field + '-list');
                 if (datalist) {
                     datalist.innerHTML = '';
                     uniqueValues[field].forEach(value => {
@@ -1479,7 +1479,7 @@
             const currentCat = elements.categoryFilter.value;
             elements.categoryFilter.innerHTML = '<option value="">All Categories</option>';
             Array.from(uniqueValues['category']).sort().forEach(cat => {
-                if (cat) elements.categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+                if (cat) elements.categoryFilter.innerHTML += '<option value="' + cat + '">' + cat + '</option>';
             });
             elements.categoryFilter.value = currentCat;
         }
@@ -1733,7 +1733,7 @@
 
         function switchTab(tabId) {
             // Hide all tab panels
-            elements.tabContents.forEach(c => c.classList.toggle('hidden', c.id !== `tab-${tabId}`));
+            elements.tabContents.forEach(c => c.classList.toggle('hidden', c.id !== ('tab-' + tabId)));
 
             // Update all nav buttons (sidebar + mobile)
             elements.tabButtons.forEach(b => {
@@ -1936,7 +1936,7 @@
                 toggleModal(elements.editProductModal, true);
 
             } else if (btn.classList.contains('delete-product-btn')) {
-                if (confirm(`Hapus SN: ${sn}?`)) deleteProduct(productId || sn);
+                if (confirm('Hapus SN: ' + sn + '?')) deleteProduct(productId || sn);
             }
         });
 
@@ -2060,9 +2060,9 @@
                 input.style.borderColor = '#d97706';
                 input.style.boxShadow   = '0 0 0 3px rgba(217,119,6,.15)';
                 const partList = [...new Set(duplicates.map(p => p.partNumber))].join(', ');
-                hint.innerHTML = `⚠ Serial Number ini sudah ada ${duplicates.length}x `
-                            + `(Part: ${partList}). `
-                            + `<span class="font-semibold">Boleh dilanjut jika beda pengiriman.</span>`;
+                hint.innerHTML = '\u26a0 Serial Number ini sudah ada ' + duplicates.length + 'x '
+                            + '(Part: ' + partList + '). '
+                            + '<span class="font-semibold">Boleh dilanjut jika beda pengiriman.</span>';
                 hint.className = 'text-xs text-amber-600 mt-1';
             } else {
                 // Clean — no duplicate
@@ -2465,35 +2465,7 @@
             _rollbackConfirmHandler = null;
         }
 
-        // Cancel button — ONE listener only
-        document.getElementById('rollbackConfirmCancelBtn')
-            ?.addEventListener('click', closeRollbackModal);
 
-        // Click dark overlay to close
-        document.getElementById('rollbackConfirmModal')
-            ?.addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal-overlay')) closeRollbackModal();
-            });
-
-        // Confirm button
-        document.getElementById('rollbackConfirmBtn')
-            ?.addEventListener('click', async () => {
-                if (!_rollbackConfirmHandler) return;
-                const note = document.getElementById('rollbackNoteInput').value.trim();
-                const fb   = document.getElementById('rollbackConfirmFeedback');
-                const btn  = document.getElementById('rollbackConfirmBtn');
-                fb.className   = 'text-sm text-gray-400 mt-2';
-                fb.textContent = 'Processing…';
-                btn.disabled   = true;
-                try {
-                    await _rollbackConfirmHandler(note);
-                    closeRollbackModal();
-                } catch (err) {
-                    fb.className   = 'text-sm text-red-600 mt-2';
-                    fb.textContent = `❌ ${err.message}`;
-                    btn.disabled   = false;
-                }
-            });
 
         // ── Rollback a whole Surat Jalan ─────────────────────────────
         elements.suratJalanHistoryTable.addEventListener('click', async (e) => {
@@ -2716,5 +2688,37 @@
             </div>
         </div>
     </div>
+    <script>
+        // ── Rollback modal button listeners ──────────────────────────────────
+        // Placed here intentionally — AFTER the modal HTML so elements exist in DOM.
+        // Attaching listeners before elements exist silently fails with getElementById.
+
+        document.getElementById('rollbackConfirmCancelBtn')
+            .addEventListener('click', closeRollbackModal);
+
+        document.getElementById('rollbackConfirmModal')
+            .addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal-overlay')) closeRollbackModal();
+            });
+
+        document.getElementById('rollbackConfirmBtn')
+            .addEventListener('click', async function() {
+                if (!_rollbackConfirmHandler) return;
+                const note = document.getElementById('rollbackNoteInput').value.trim();
+                const fb   = document.getElementById('rollbackConfirmFeedback');
+                const btn  = document.getElementById('rollbackConfirmBtn');
+                fb.className   = 'text-sm text-gray-400 mt-2';
+                fb.textContent = 'Processing...';
+                btn.disabled   = true;
+                try {
+                    await _rollbackConfirmHandler(note);
+                    closeRollbackModal();
+                } catch (err) {
+                    fb.className   = 'text-sm text-red-600 mt-2';
+                    fb.textContent = 'Error: ' + (err.message || 'Rollback failed. Check server logs.');
+                    btn.disabled   = false;
+                }
+            });
+    </script>
 </body>
 </html>
