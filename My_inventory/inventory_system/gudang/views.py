@@ -1111,6 +1111,34 @@ def print_surat_jalan(request, sdr_no):
         f"Project: {trx.project_name} | Recipient: {trx.recipient}",
     )
     return response
+@login_required
+@manager_or_staff_required
+def get_surat_masuk_history(request):
+    """Return list of all Surat Masuk records."""
+    from .models import IncomingNote
+    notes = IncomingNote.objects.order_by('-created_at')
+    data  = []
+    for n in notes:
+        import json as _json
+        try:
+            items = _json.loads(n.items_json) if n.items_json else []
+        except Exception:
+            items = []
+        data.append({
+            'id':            n.id,
+            'note_no':       n.note_no,
+            'supplier':      n.supplier,
+            'received_by':   n.received_by,
+            'received_date': n.received_date,
+            'awb':           n.awb,
+            'notes':         n.notes,
+            'item_count':    len(items),
+            'created_at':    localtime(n.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+            'created_by':    n.created_by.username if n.created_by else '-',
+        })
+    return JsonResponse(data, safe=False)
+
+
 @csrf_exempt
 @login_required
 @staff_required
