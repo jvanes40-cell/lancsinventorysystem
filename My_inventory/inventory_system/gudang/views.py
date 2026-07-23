@@ -27,18 +27,6 @@ def health_check(request):
 
 # FIX #5: record_movement now requires qty_before to be passed explicitly,
 # instead of calculating it backwards from the already-saved product.quantity.
-def record_movement(product, movement_type, quantity, qty_before, performed_by, reference='', note=''):
-    StockMovement.objects.create(
-        product       = product,
-        movement_type = movement_type,
-        quantity      = abs(quantity),
-        qty_before    = qty_before,
-        qty_after     = product.quantity,  # product.quantity is already updated by caller
-        reference     = reference,
-        note          = note,
-        performed_by  = performed_by,
-    )
-
 
 def _get_changed_fields(old_obj, new_data):
     field_map = {
@@ -1111,6 +1099,146 @@ def print_surat_jalan(request, sdr_no):
         f"Project: {trx.project_name} | Recipient: {trx.recipient}",
     )
     return response
+
+@csrf_exempt
+@login_required
+@staff_required
+def reserve_product(request):
+    """Lock a product to prevent it from being withdrawn."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from django.utils import timezone
+        data       = json.loads(request.body)
+        product_id = data.get('productId')
+        note       = data.get('note', '').strip()
+
+        product = Product.objects.get(id=product_id)
+
+        if product.is_reserved:
+            reserver = product.reserved_by.username if product.reserved_by else 'someone'
+            return JsonResponse({
+                'status':  'error',
+                'message': f'Item sudah direservasi oleh {reserver}.',
+            })
+
+        product.is_reserved   = True
+        product.reserved_by   = request.user
+        product.reserved_at   = timezone.now()
+        product.reserved_note = note
+        product.save()
+
+        log_action(request.user, 'RESERVE',
+            f"Reserved: {product.part_number} (SN: {product.serial_number}) | Note: {note or '-'}")
+        return JsonResponse({'status': 'success', 'message': f'{product.part_number} berhasil direservasi.'})
+    except Product.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Produk tidak ditemukan.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def release_product(request):
+    """Release a reservation so the product can be withdrawn again."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        data       = json.loads(request.body)
+        product_id = data.get('productId')
+
+        product               = Product.objects.get(id=product_id)
+        old_note              = product.reserved_note
+        product.is_reserved   = False
+        product.reserved_by   = None
+        product.reserved_at   = None
+        product.reserved_note = ''
+        product.save()
+
+        log_action(request.user, 'RELEASE',
+            f"Released: {product.part_number} (SN: {product.serial_number}) | Was: {old_note or '-'}")
+        return JsonResponse({'status': 'success', 'message': f'Reservasi {product.part_number} dibatalkan.'})
+    except Product.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Produk tidak ditemukan.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def void_surat_masuk(request, note_no):
+    """Void a Surat Masuk — reverses all stock IN movements and marks it voided."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import IncomingNote
+        from django.utils import timezone
+        data   = json.loads(request.body)
+        reason = data.get('reason', '').strip() or 'Voided by admin'
+
+        try:
+            note = IncomingNote.objects.get(note_no=note_no)
+        except IncomingNote.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': f'Surat Masuk {note_no} tidak ditemukan.'})
+
+        if note.notes and note.notes.startswith('[VOID]'):
+            return JsonResponse({'status': 'error', 'message': 'Surat Masuk ini sudah di-void sebelumnya.'})
+
+        items = json.loads(note.items_json) if note.items_json else []
+
+        with db_transaction.atomic():
+            for item in items:
+                sn  = item.get('serialNumber', '')
+                qty = int(item.get('quantity', 0))
+                if qty <= 0:
+                    continue
+
+                # Find the matching stock IN movement for this note
+                movement = StockMovement.objects.filter(
+                    reference     = note_no,
+                    movement_type = 'IN',
+                    product__serial_number = sn,
+                ).select_for_update().first()
+
+                if movement and not movement.is_rolled_back:
+                    product    = movement.product
+                    qty_before = product.quantity
+                    # Reverse the stock IN
+                    product.quantity = max(0, product.quantity - qty)
+                    product.save()
+
+                    # Mark original movement as rolled back
+                    movement.is_rolled_back = True
+                    movement.rolled_back_by = request.user
+                    movement.rolled_back_at = timezone.now()
+                    movement.rollback_note  = f'Voided via Surat Masuk void: {reason}'
+                    movement.save()
+
+                    # Create compensating ROLLBACK movement
+                    StockMovement.objects.create(
+                        product       = product,
+                        movement_type = 'ROLLBACK',
+                        quantity      = qty,
+                        qty_before    = qty_before,
+                        qty_after     = product.quantity,
+                        reference     = note_no,
+                        note          = f'VOID Surat Masuk {note_no} | {reason}',
+                        performed_by  = request.user,
+                    )
+
+            # Mark note as voided
+            note.notes = f'[VOID] {reason} | Original: {note.notes}'
+            note.save()
+
+        log_action(request.user, 'VOID_SM',
+            f'Surat Masuk {note_no} di-void | Reason: {reason} | {len(items)} items reversed')
+        return JsonResponse({'status': 'success', 'message': f'Surat Masuk {note_no} berhasil di-void.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
 @login_required
 @manager_or_staff_required
 def get_surat_masuk_history(request):

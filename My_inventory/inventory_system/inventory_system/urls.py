@@ -59,8 +59,13 @@ urlpatterns = [
          views.print_surat_jalan,
          name='export_pdf'),
 
-        # --- SURAT MASUK ---
+    # --- RESERVE / RELEASE ---
+    path('api/reserve-product/',  views.reserve_product,  name='reserve_product'),
+    path('api/release-product/',  views.release_product,  name='release_product'),
+
+    # --- SURAT MASUK ---
     path('api/surat-masuk/',                views.get_surat_masuk_history, name='get_surat_masuk_history'),
     path('api/surat-masuk/create/',             views.create_surat_masuk,     name='create_surat_masuk'),
     path('api/surat-masuk-pdf/<path:note_no>/', views.export_surat_masuk_pdf, name='export_surat_masuk_pdf'),
+    path('api/surat-masuk-void/<path:note_no>/', views.void_surat_masuk,     name='void_surat_masuk'),
 ]
