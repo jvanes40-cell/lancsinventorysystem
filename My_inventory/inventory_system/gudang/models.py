@@ -110,6 +110,7 @@ class IncomingNote(models.Model):
     received_by   = models.CharField(max_length=100, blank=True)
     received_date = models.CharField(max_length=50, blank=True)
     awb           = models.CharField(max_length=100, blank=True)
+    po_number     = models.CharField(max_length=100, blank=True)
     notes         = models.TextField(blank=True)
     items_json    = models.TextField(blank=True)
     created_by    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
