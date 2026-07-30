@@ -1678,35 +1678,27 @@
             filteredHistory.forEach(item => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50 transition-colors';
-                row.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${item.date}</td>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">${item.sdrNo}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${item.projectName}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${item.picAtSite || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        <button class="view-sj-items-btn inline-flex items-center px-3 py-1.5 border border-gray-200 text-xs font-medium rounded text-gray-700 bg-gray-50 hover:bg-gray-100 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                            ${item.items.length} Item${item.items.length !== 1 ? 's' : ''}
-                        </button>
-                    </td>
-                    <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
-                        ${item.isRolledBack ? `
-                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-                            ↩ Rolled Back
-                        </span>` : `
-                        <button class="edit-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-amber-700 bg-amber-100 hover:bg-amber-200 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            Edit
-                        </button>
-                        <button class="rollback-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                            Rollback
-                        </button>`}
-                        <a href="/api/export-pdf/${item.sdrNo}/" target="_blank"
-                           class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition">
-                            PDF
-                        </a>
-                    </td>`;
+                const rolledBackHtml = item.isRolledBack
+                    ? '<span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">\u21a9 Rolled Back</span>'
+                    : '<button class="edit-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-amber-700 bg-amber-100 hover:bg-amber-200 transition" data-sdr="' + item.sdrNo + '">'
+                      + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button>'
+                      + '<button class="rollback-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition" data-sdr="' + item.sdrNo + '">'
+                      + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>Rollback</button>';
+
+                const itemCount = item.items.length;
+                row.innerHTML = '<td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">' + item.date + '</td>'
+                    + '<td class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">' + item.sdrNo + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600">' + item.projectName + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600">' + (item.picAtSite || '-') + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">'
+                    + '<button class="view-sj-items-btn inline-flex items-center px-3 py-1.5 border border-gray-200 text-xs font-medium rounded text-gray-700 bg-gray-50 hover:bg-gray-100 transition" data-sdr="' + item.sdrNo + '">'
+                    + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>'
+                    + itemCount + ' Item' + (itemCount !== 1 ? 's' : '') + '</button></td>'
+                    + '<td class="px-6 py-4 text-right whitespace-nowrap space-x-2">'
+                    + rolledBackHtml
+                    + '<a href="/api/export-pdf/' + item.sdrNo + '/" target="_blank"'
+                    + ' class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition">PDF</a>'
+                    + '</td>';
                 elements.suratJalanHistoryTable.appendChild(row);
             });
         }
@@ -1903,16 +1895,17 @@
             );
             elements.selectItemTable.innerHTML = list.length === 0
                 ? `<tr><td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No available items found.</td></tr>`
-                : list.map(p => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-left w-24">
-                            <button class="add-to-sj-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium py-1.5 px-4 rounded transition border border-indigo-200 shadow-sm"
-                                    data-id="${p.id}" data-serial-number="${p.serialNumber}">Select</button>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.partNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.serialNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">${p.quantity}</td>
-                    </tr>`).join('');
+                : list.map(function(p) {
+                    return '<tr class="hover:bg-gray-50">'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-left w-24">'
+                        + '<button class="add-to-sj-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium py-1.5 px-4 rounded transition border border-indigo-200 shadow-sm"'
+                        + ' data-id="' + p.id + '" data-serial-number="' + p.serialNumber + '">Select</button>'
+                        + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + p.partNumber + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + p.serialNumber + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">' + p.quantity + '</td>'
+                        + '</tr>';
+                }).join('');
         }
 
         // --------------- PENDING ITEM (qty modal) ---------------
@@ -2432,17 +2425,15 @@
             );
             tbody.innerHTML = avail.length === 0
                 ? `<tr><td colspan="3" class="px-4 py-4 text-center text-sm text-gray-400">No available products found.</td></tr>`
-                : avail.map(p => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">${p.partNumber}</td>
-                        <td class="px-4 py-3 text-sm font-mono text-gray-500">${p.serialNumber}</td>
-                        <td class="px-4 py-3 text-center">
-                            <button onclick="addEditSjItem(${p.id})"
-                                class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">
-                                + Add
-                            </button>
-                        </td>
-                    </tr>`).join('');
+                : avail.map(function(p) {
+                    return '<tr class="hover:bg-gray-50">'
+                        + '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + p.partNumber + '</td>'
+                        + '<td class="px-4 py-3 text-sm font-mono text-gray-500">' + p.serialNumber + '</td>'
+                        + '<td class="px-4 py-3 text-center">'
+                        + '<button data-pid="' + p.id + '" class="add-edit-sj-btn text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">+ Add</button>'
+                        + '</td>'
+                        + '</tr>';
+                }).join('');
         }
 
         function addEditSjItem(productId) {
@@ -2527,6 +2518,12 @@
         // ============================================================
         // ROLLBACK
         // ============================================================
+        // Delegated listener for edit SJ add-item button
+        document.getElementById('editSjAvailableTable')?.addEventListener('click', function(e) {
+            const btn = e.target.closest('.add-edit-sj-btn');
+            if (!btn) return;
+            addEditSjItem(parseInt(btn.dataset.pid));
+        });
 
         // Store the current rollback handler so we can swap it each time
     let _rollbackConfirmHandler = null;
@@ -2767,8 +2764,32 @@
             }
         }
 
+        // Delegated listener for smHistoryTable void button
+        document.getElementById('smHistoryTable')?.addEventListener('click', async function(e) {
+            const btn = e.target.closest('.void-sm-btn');
+            if (!btn) return;
+            const noteNo = btn.dataset.note;
+            if (!noteNo) return;
+            const reason = prompt('Void Surat Masuk: ' + noteNo + '\n\nAlasan void:');
+            if (reason === null) return;
+            if (!reason.trim()) { alert('Alasan wajib diisi.'); return; }
+            if (!confirm('Yakin void ' + noteNo + '? Tidak bisa dibatalkan.')) return;
+            try {
+                const res  = await fetch('/api/surat-masuk-void/' + encodeURIComponent(noteNo) + '/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ reason }),
+                });
+                const data = await res.json();
+                if (data.status === 'success') { showMessage('Void Berhasil', data.message); fetchSuratMasukHistory(); fetchProducts(); }
+                else showMessage('Error', data.message);
+            } catch (err) { showMessage('Error', err.message); }
+        });
 
     </script>
+
+    
+
     <!-- ===== EDIT SURAT JALAN MODAL ===== -->
     <div id="editSjModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
         <div class="modal-overlay absolute inset-0"></div>
