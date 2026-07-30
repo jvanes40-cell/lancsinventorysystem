@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -212,13 +213,7 @@
         <aside class="sidebar w-60 flex flex-col flex-shrink-0 hidden md:flex z-20">
             <!-- Logo -->
             <div class="h-16 flex items-center px-5 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mr-3 flex-shrink-0">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                </div>
-                <div>
-                    <h1 class="text-base font-bold text-gray-900 leading-tight">LANCS <span class="text-indigo-600">WMS</span></h1>
-                    <p class="text-xs text-gray-400 leading-tight">Warehouse Management</p>
-                </div>
+            <img src="{% static 'LogoLancs.png' %}" alt="LANCS Logo" class="h-10 w-auto object-contain">
             </div>
 
             <!-- Nav -->
@@ -281,10 +276,7 @@
                 <div class="flex items-center">
                     <!-- Mobile logo -->
                     <div class="md:hidden flex items-center mr-3">
-                        <div class="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center mr-2">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                        </div>
-                        <span class="font-bold text-gray-900 text-base">LANCS</span>
+                        <img src="{% static 'LogoLancs.png' %}" alt="LANCS Logo" class="h-7 w-auto object-contain">
                     </div>
                     <!-- Page title updated by switchTab -->
                     <h2 id="pageTitle" class="text-sm font-semibold text-gray-700 hidden md:block">Product List</h2>
