@@ -1373,3 +1373,214 @@ def export_surat_masuk_pdf(request, note_no):
 
     log_action(request.user, 'PRINT_PDF', f"Printed Surat Masuk PDF: {note_no}")
     return response
+
+# ---------------------------------------------------------------------------
+# STOCK OPNAME
+# ---------------------------------------------------------------------------
+
+def _location_sort_key(loc):
+    """Sort locations in walking order: A1L → A1R → A2L → ... → E4R"""
+    if not loc or len(loc) < 3:
+        return 'ZZZ' + (loc or '')
+    rack  = loc[0].upper()
+    level = loc[1]
+    side  = '0' if loc[2].upper() == 'L' else '1'
+    return rack + level + side
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def create_stock_opname(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import StockOpname, StockOpnameItem
+        data  = json.loads(request.body)
+        date  = data.get('date')
+        notes = data.get('notes', '').strip()
+
+        if not date:
+            return JsonResponse({'status': 'error', 'message': 'Tanggal wajib diisi.'})
+
+        opname = StockOpname.objects.create(
+            date       = date,
+            notes      = notes,
+            created_by = request.user,
+        )
+
+        # Snapshot all products sorted by location
+        products = list(Product.objects.all())
+        products.sort(key=lambda p: _location_sort_key(p.location or ''))
+
+        items = [
+            StockOpnameItem(
+                opname     = opname,
+                product    = p,
+                location   = p.location or '',
+                system_qty = p.quantity,
+            )
+            for p in products
+        ]
+        StockOpnameItem.objects.bulk_create(items)
+
+        log_action(request.user, 'OPNAME_CREATE',
+            f"Stock Opname {date} dibuat | {len(items)} items")
+        return JsonResponse({
+            'status':  'success',
+            'id':      opname.id,
+            'message': f'Stock Opname {date} dibuat dengan {len(items)} item.',
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+@manager_or_staff_required
+def get_stock_opnames(request):
+    from .models import StockOpname, StockOpnameItem
+    opnames = StockOpname.objects.order_by('-date')
+    data = []
+    for o in opnames:
+        total       = o.items.count()
+        counted     = o.items.filter(counted_qty__isnull=False).count()
+        discrepant  = o.items.filter(discrepancy__isnull=False).exclude(discrepancy=0).count()
+        data.append({
+            'id':          o.id,
+            'date':        str(o.date),
+            'status':      o.status,
+            'notes':       o.notes,
+            'total':       total,
+            'counted':     counted,
+            'discrepant':  discrepant,
+            'created_by':  o.created_by.username if o.created_by else '-',
+            'created_at':  localtime(o.created_at).strftime('%Y-%m-%d %H:%M'),
+            'completed_at': localtime(o.completed_at).strftime('%Y-%m-%d %H:%M') if o.completed_at else None,
+        })
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+@manager_or_staff_required
+def get_stock_opname_detail(request, opname_id):
+    from .models import StockOpname, StockOpnameItem
+    opname = get_object_or_404(StockOpname, id=opname_id)
+    items  = opname.items.select_related('product').all()
+    data   = []
+    for item in items:
+        data.append({
+            'id':           item.id,
+            'location':     item.location,
+            'part_number':  item.product.part_number,
+            'serial_number':item.product.serial_number,
+            'description':  item.product.description,
+            'system_qty':   item.system_qty,
+            'counted_qty':  item.counted_qty,
+            'discrepancy':  item.discrepancy,
+            'notes':        item.notes,
+        })
+    return JsonResponse({
+        'id':           opname.id,
+        'date':         str(opname.date),
+        'status':       opname.status,
+        'notes':        opname.notes,
+        'total':        len(data),
+        'counted':      sum(1 for i in data if i['counted_qty'] is not None),
+        'discrepant':   sum(1 for i in data if i['discrepancy'] and i['discrepancy'] != 0),
+        'items':        data,
+    })
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def update_opname_count(request, opname_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import StockOpname, StockOpnameItem
+        opname = get_object_or_404(StockOpname, id=opname_id)
+        if opname.status == 'completed':
+            return JsonResponse({'status': 'error', 'message': 'Opname sudah selesai.'})
+
+        data        = json.loads(request.body)
+        item_id     = data.get('itemId')
+        counted_qty = data.get('countedQty')
+        notes       = data.get('notes', '').strip()
+
+        item             = StockOpnameItem.objects.get(id=item_id, opname=opname)
+        item.counted_qty = int(counted_qty)
+        item.notes       = notes
+        item.save()
+
+        return JsonResponse({
+            'status':      'success',
+            'discrepancy': item.discrepancy,
+        })
+    except StockOpnameItem.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Item tidak ditemukan.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@staff_required
+def complete_stock_opname(request, opname_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method invalid'})
+    try:
+        from .models import StockOpname
+        from django.utils import timezone
+        opname = get_object_or_404(StockOpname, id=opname_id)
+        if opname.status == 'completed':
+            return JsonResponse({'status': 'error', 'message': 'Opname sudah selesai.'})
+        opname.status       = 'completed'
+        opname.completed_at = timezone.now()
+        opname.save()
+        log_action(request.user, 'OPNAME_COMPLETE',
+            f"Stock Opname {opname.date} selesai")
+        return JsonResponse({'status': 'success', 'message': f'Opname {opname.date} selesai.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+def export_opname_pdf(request, opname_id):
+    from .models import StockOpname
+    opname = get_object_or_404(StockOpname, id=opname_id)
+    items  = opname.items.select_related('product').all()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="Opname_{opname.date}.pdf"'
+    template    = get_template('stock_opname_pdf.html')
+    html        = template.render({'opname': opname, 'items': items}, request)
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('Error generating PDF', status=400)
+    return response
+
+
+@login_required
+def export_opname_csv(request, opname_id):
+    from .models import StockOpname
+    import csv
+    opname = get_object_or_404(StockOpname, id=opname_id)
+    items  = opname.items.select_related('product').all()
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="Opname_{opname.date}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['No', 'Location', 'Part Number', 'Serial Number',
+                     'Description', 'System Qty', 'Counted Qty', 'Discrepancy', 'Notes'])
+    for i, item in enumerate(items, 1):
+        writer.writerow([
+            i,
+            item.location,
+            item.product.part_number,
+            item.product.serial_number,
+            item.product.description,
+            item.system_qty,
+            item.counted_qty if item.counted_qty is not None else '',
+            item.discrepancy if item.discrepancy is not None else '',
+            item.notes,
+        ])
+    return response

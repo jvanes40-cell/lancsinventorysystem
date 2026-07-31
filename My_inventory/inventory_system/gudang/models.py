@@ -263,3 +263,43 @@ class StocktakeItem(models.Model):
 
     def __str__(self):
         return f"{self.product.serial_number} | sys:{self.system_qty} cnt:{self.counted_qty}"
+
+# ---------------------------------------------------------------------------
+# STOCK OPNAME
+# ---------------------------------------------------------------------------
+
+class StockOpname(models.Model):
+    STATUS_CHOICES = [
+        ('open',      'Open'),
+        ('completed', 'Completed'),
+    ]
+    date        = models.DateField()
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    notes       = models.TextField(blank=True)
+    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='stock_opnames')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Opname {self.date} [{self.status}]"
+
+
+class StockOpnameItem(models.Model):
+    opname      = models.ForeignKey(StockOpname, on_delete=models.CASCADE, related_name='items')
+    product     = models.ForeignKey(Product, on_delete=models.PROTECT)
+    location    = models.CharField(max_length=50, blank=True)
+    system_qty  = models.IntegerField()
+    counted_qty = models.IntegerField(null=True, blank=True)
+    discrepancy = models.IntegerField(null=True, blank=True)
+    notes       = models.CharField(max_length=200, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.counted_qty is not None:
+            self.discrepancy = self.counted_qty - self.system_qty
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['location', 'product__part_number']
+
+    def __str__(self):
+        return f"{self.location} | {self.product.part_number} | sys:{self.system_qty} cnt:{self.counted_qty}"
