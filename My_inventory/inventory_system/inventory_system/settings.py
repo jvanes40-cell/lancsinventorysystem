@@ -228,3 +228,14 @@ LOGGING = {
         },
     },
 }
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+STATIC_URL = '/static/'
+# Tambahkan ini agar Django membaca folder static di root
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]

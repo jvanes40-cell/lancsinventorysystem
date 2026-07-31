@@ -68,4 +68,12 @@ urlpatterns = [
     path('api/surat-masuk/create/',             views.create_surat_masuk,     name='create_surat_masuk'),
     path('api/surat-masuk-pdf/<path:note_no>/', views.export_surat_masuk_pdf, name='export_surat_masuk_pdf'),
     path('api/surat-masuk-void/<path:note_no>/', views.void_surat_masuk,     name='void_surat_masuk'),
+    # --- STOCK OPNAME ---
+    path('api/opname/',                        views.get_stock_opnames,      name='get_stock_opnames'),
+    path('api/opname/create/',                 views.create_stock_opname,    name='create_stock_opname'),
+    path('api/opname/<int:opname_id>/',        views.get_stock_opname_detail,name='get_stock_opname_detail'),
+    path('api/opname/<int:opname_id>/count/',  views.update_opname_count,    name='update_opname_count'),
+    path('api/opname/<int:opname_id>/complete/', views.complete_stock_opname, name='complete_stock_opname'),
+    path('api/opname/<int:opname_id>/pdf/',    views.export_opname_pdf,      name='export_opname_pdf'),
+    path('api/opname/<int:opname_id>/csv/',    views.export_opname_csv,      name='export_opname_csv'),
 ]

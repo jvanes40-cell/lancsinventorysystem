@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -212,13 +213,7 @@
         <aside class="sidebar w-60 flex flex-col flex-shrink-0 hidden md:flex z-20">
             <!-- Logo -->
             <div class="h-16 flex items-center px-5 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mr-3 flex-shrink-0">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                </div>
-                <div>
-                    <h1 class="text-base font-bold text-gray-900 leading-tight">LANCS <span class="text-indigo-600">WMS</span></h1>
-                    <p class="text-xs text-gray-400 leading-tight">Warehouse Management</p>
-                </div>
+            <img src="{% static 'LogoLancs.png' %}" alt="LANCS Logo" class="h-10 w-auto object-contain">
             </div>
 
             <!-- Nav -->
@@ -238,6 +233,11 @@
                 <button data-tab="withdrawal-history" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
                     <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Withdrawal History
                 </button>
+                <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-5">Warehouse Ops</p>
+                <button data-tab="opname" class="tab-btn nav-item w-full flex items-center px-3 py-2.5 text-sm text-gray-600">
+                    <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>Stock Opname
+                </button>
+            
 
                 <p class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-5">Warehouse Ops</p>
 
@@ -281,10 +281,7 @@
                 <div class="flex items-center">
                     <!-- Mobile logo -->
                     <div class="md:hidden flex items-center mr-3">
-                        <div class="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center mr-2">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                        </div>
-                        <span class="font-bold text-gray-900 text-base">LANCS</span>
+                        <img src="{% static 'LogoLancs.png' %}" alt="LANCS Logo" class="h-7 w-auto object-contain">
                     </div>
                     <!-- Page title updated by switchTab -->
                     <h2 id="pageTitle" class="text-sm font-semibold text-gray-700 hidden md:block">Product List</h2>
@@ -357,6 +354,10 @@
                                 <div class="bg-indigo-100 border border-indigo-200 text-indigo-800 px-4 py-2 rounded-lg font-bold shadow-sm flex items-center h-full">
                                     Total Qty: <span id="totalQuantityBadge" class="ml-2 text-indigo-900 text-lg">0</span>
                                 </div>
+                                <button id="sortByLocationBtn" onclick="toggleLocationSort()" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm h-full">
+                                    <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                                    Sort by Location
+                                </button>
                                 <button id="exportCsvBtn" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 flex items-center text-sm shadow-sm h-full">
                                     <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Export CSV
                                 </button>
@@ -472,8 +473,38 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700">Location</label>
-                                        <input type="text" id="location" list="location-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border">
+                                        <input type="text" id="location" list="location-list" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm uppercase-input py-2 px-3 border" placeholder="e.g. A2R">
                                         <datalist id="location-list"></datalist>
+                                        <!-- Location picker helper -->
+                                        <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2" id="locationPicker">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold text-gray-500 w-10">Rack</span>
+                                                <div class="flex gap-1">
+                                                    <button type="button" data-pick="rack" data-val="A" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-blue-50 hover:border-blue-400 transition">A</button>
+                                                    <button type="button" data-pick="rack" data-val="B" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-green-50 hover:border-green-400 transition">B</button>
+                                                    <button type="button" data-pick="rack" data-val="C" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-amber-50 hover:border-amber-400 transition">C</button>
+                                                    <button type="button" data-pick="rack" data-val="D" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-purple-50 hover:border-purple-400 transition">D</button>
+                                                    <button type="button" data-pick="rack" data-val="E" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-red-50 hover:border-red-400 transition">E</button>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold text-gray-500 w-10">Level</span>
+                                                <div class="flex gap-1">
+                                                    <button type="button" data-pick="level" data-val="4" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">4 ▲</button>
+                                                    <button type="button" data-pick="level" data-val="3" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">3</button>
+                                                    <button type="button" data-pick="level" data-val="2" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">2</button>
+                                                    <button type="button" data-pick="level" data-val="1" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">1 ▼</button>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold text-gray-500 w-10">Side</span>
+                                                <div class="flex gap-1">
+                                                    <button type="button" data-pick="side" data-val="L" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">L</button>
+                                                    <button type="button" data-pick="side" data-val="R" onclick="pickLocation(this)" class="loc-pick-btn px-2.5 py-1 text-xs font-bold rounded border border-gray-300 bg-white hover:bg-gray-100 transition">R</button>
+                                                </div>
+                                                <span id="locationPreview" class="ml-3 text-sm font-bold text-indigo-600"></span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="mt-6 flex items-center justify-between">
@@ -877,6 +908,96 @@
             </main>
         </div>
     </div>
+
+<!-- ===== TAB: STOCK OPNAME ===== -->
+                    <div id="tab-opname" class="tab-content hidden fade-in space-y-6">
+
+                        <!-- Create new session -->
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+                                <h2 class="text-xl font-bold text-gray-900">📋 Buat Stock Opname</h2>
+                                <p class="text-sm text-gray-500 mt-1">Snapshot semua stok berdasarkan lokasi untuk dihitung fisik.</p>
+                            </div>
+                            <div class="p-6 flex flex-wrap gap-4 items-end">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Opname <span class="text-red-500">*</span></label>
+                                    <input id="opnameDate" type="date" class="block rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                </div>
+                                <div class="flex-1 min-w-48">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+                                    <input id="opnameNotes" type="text" placeholder="e.g. Opname Bulanan Juli 2026" class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 border">
+                                </div>
+                                <div>
+                                    <button onclick="createStockOpname()" class="btn bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-indigo-700 shadow-md flex items-center text-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                        Mulai Opname
+                                    </button>
+                                </div>
+                                <p id="opnameFeedback" class="text-sm font-medium w-full"></p>
+                            </div>
+                        </div>
+
+                        <!-- Sessions list -->
+                        <div class="bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl flex items-center justify-between">
+                                <h2 class="text-xl font-bold text-gray-900">📅 Riwayat Opname</h2>
+                                <button onclick="fetchStockOpnames()" class="btn bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg hover:bg-gray-50 text-sm flex items-center shadow-sm">
+                                    <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Refresh
+                                </button>
+                            </div>
+                            <div id="opnameSessionList" class="p-6 space-y-3">
+                                <p class="text-sm text-gray-400 text-center py-4">Belum ada session opname.</p>
+                            </div>
+                        </div>
+
+                        <!-- Detail panel (hidden until session selected) -->
+                        <div id="opnameDetailPanel" class="hidden bg-white rounded-xl card-shadow border border-gray-100">
+                            <div class="sticky top-0 z-20 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-xl">
+                                <div>
+                                    <h2 id="opnameDetailTitle" class="text-xl font-bold text-gray-900">Detail Opname</h2>
+                                    <p id="opnameDetailSub" class="text-sm text-gray-500 mt-0.5"></p>
+                                </div>
+                                <div class="flex gap-3">
+                                    <a id="opnameCsvBtn" href="#" target="_blank" class="btn bg-green-600 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>CSV
+                                    </a>
+                                    <a id="opnamePdfBtn" href="#" target="_blank" class="btn bg-red-600 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>PDF
+                                    </a>
+                                    <button id="opnameCompleteBtn" onclick="completeStockOpname()" class="btn bg-indigo-600 text-white text-sm font-medium py-2 px-4 rounded-lg flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Selesai
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Progress bar -->
+                            <div class="px-6 py-3 border-b border-gray-100 bg-gray-50">
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Progress penghitungan</span>
+                                    <span id="opnameProgress" class="font-semibold text-gray-900">0 / 0</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="opnameProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-20">Lokasi</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Part No</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Serial No</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-20">Sys Qty</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-28">Counted Qty</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-20">Diff</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="opnameItemsTable" class="divide-y divide-gray-100"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
     <!-- ===== MOBILE BOTTOM NAV ===== -->
     <nav id="mobileNav" class="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-2 py-2">
@@ -1561,13 +1682,27 @@
         // --------------- RENDER FUNCTIONS ---------------
 
         function renderProductList() {
-            const searchTerm = elements.productListSearch.value.toLowerCase();
-            const catFilter = elements.categoryFilter.value.toLowerCase();
-            const filteredProducts = state.products.filter(product => {
+            const searchTerm  = elements.productListSearch.value.toLowerCase();
+            const catFilter   = elements.categoryFilter.value.toLowerCase();
+            const locFilter   = (document.getElementById('locationFilter')?.value || '').toLowerCase();
+            const stockFilter = document.getElementById('stockFilter')?.value || '';
+
+            let filteredProducts = state.products.filter(product => {
                 const matchesSearch = Object.values(product).some(v => String(v).toLowerCase().includes(searchTerm));
-                const matchesCat = catFilter === '' || String(product.category).toLowerCase() === catFilter;
-                return matchesSearch && matchesCat;
+                const matchesCat    = catFilter === '' || String(product.category).toLowerCase() === catFilter;
+                const matchesLoc    = !locFilter || (product.location || '').toLowerCase() === locFilter;
+                let   matchesStock  = true;
+                if (stockFilter === 'in_stock')     matchesStock = product.quantity > 4;
+                if (stockFilter === 'low_stock')    matchesStock = product.quantity > 0 && product.quantity < 5;
+                if (stockFilter === 'out_of_stock') matchesStock = product.quantity <= 0;
+                if (stockFilter === 'reserved')     matchesStock = product.isReserved;
+                return matchesSearch && matchesCat && matchesLoc && matchesStock;
             });
+
+            // Sort by location if active
+            if (_locationSortActive) {
+                filteredProducts = sortProductsByLocation(filteredProducts);
+            }
 
             const totalQty = filteredProducts.reduce((sum, p) => sum + parseInt(p.quantity || 0, 10), 0);
             elements.totalQuantityBadge.textContent = totalQty;
@@ -1619,7 +1754,7 @@
                         + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + pAwb + '</td>'
                         + '<td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="' + pDesc + '">' + pDesc + '</td>'
                         + '<td class="px-6 py-4 whitespace-nowrap text-sm ' + qtyColor + '">' + product.quantity + '</td>'
-                        + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + pLoc + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm">' + locationBadge(pLoc) + '</td>'
                         + '<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">'
                         + '<button class="details-product-btn text-indigo-600 hover:text-indigo-900" data-id="' + pId + '" data-serial-number="' + pSN + '">History</button> '
                         + '<button class="edit-product-btn text-blue-600 hover:text-blue-900" data-id="' + pId + '" data-serial-number="' + pSN + '">Edit</button> '
@@ -1678,35 +1813,27 @@
             filteredHistory.forEach(item => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50 transition-colors';
-                row.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${item.date}</td>
-                    <td class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">${item.sdrNo}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${item.projectName}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${item.picAtSite || '-'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                        <button class="view-sj-items-btn inline-flex items-center px-3 py-1.5 border border-gray-200 text-xs font-medium rounded text-gray-700 bg-gray-50 hover:bg-gray-100 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                            ${item.items.length} Item${item.items.length !== 1 ? 's' : ''}
-                        </button>
-                    </td>
-                    <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
-                        ${item.isRolledBack ? `
-                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">
-                            ↩ Rolled Back
-                        </span>` : `
-                        <button class="edit-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-amber-700 bg-amber-100 hover:bg-amber-200 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            Edit
-                        </button>
-                        <button class="rollback-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition" data-sdr="${item.sdrNo}">
-                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                            Rollback
-                        </button>`}
-                        <a href="/api/export-pdf/${item.sdrNo}/" target="_blank"
-                           class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition">
-                            PDF
-                        </a>
-                    </td>`;
+                const rolledBackHtml = item.isRolledBack
+                    ? '<span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed">\u21a9 Rolled Back</span>'
+                    : '<button class="edit-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-amber-700 bg-amber-100 hover:bg-amber-200 transition" data-sdr="' + item.sdrNo + '">'
+                      + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit</button>'
+                      + '<button class="rollback-sj-btn inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 transition" data-sdr="' + item.sdrNo + '">'
+                      + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>Rollback</button>';
+
+                const itemCount = item.items.length;
+                row.innerHTML = '<td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">' + item.date + '</td>'
+                    + '<td class="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">' + item.sdrNo + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600">' + item.projectName + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600">' + (item.picAtSite || '-') + '</td>'
+                    + '<td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">'
+                    + '<button class="view-sj-items-btn inline-flex items-center px-3 py-1.5 border border-gray-200 text-xs font-medium rounded text-gray-700 bg-gray-50 hover:bg-gray-100 transition" data-sdr="' + item.sdrNo + '">'
+                    + '<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>'
+                    + itemCount + ' Item' + (itemCount !== 1 ? 's' : '') + '</button></td>'
+                    + '<td class="px-6 py-4 text-right whitespace-nowrap space-x-2">'
+                    + rolledBackHtml
+                    + '<a href="/api/export-pdf/' + item.sdrNo + '/" target="_blank"'
+                    + ' class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition">PDF</a>'
+                    + '</td>';
                 elements.suratJalanHistoryTable.appendChild(row);
             });
         }
@@ -1810,6 +1937,7 @@
             'withdrawal-history': 'Withdrawal History',
             'history':            'Activity Log',
             'stock-history':      'Stock History',
+            'opname': 'Stock Opname',
         };
 
         function switchTab(tabId) {
@@ -1833,6 +1961,7 @@
             else if (tabId === 'products')           renderProductList();
             else if (tabId === 'surat-jalan')        clearSuratJalanForm();
             else if (tabId === 'withdrawal-history') renderSuratJalanHistory();
+            else if (tabId === 'opname') fetchStockOpnames();
         }
 
         // --------------- DEBOUNCED SEARCH ---------------
@@ -1903,16 +2032,17 @@
             );
             elements.selectItemTable.innerHTML = list.length === 0
                 ? `<tr><td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">No available items found.</td></tr>`
-                : list.map(p => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-left w-24">
-                            <button class="add-to-sj-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium py-1.5 px-4 rounded transition border border-indigo-200 shadow-sm"
-                                    data-id="${p.id}" data-serial-number="${p.serialNumber}">Select</button>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.partNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.serialNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">${p.quantity}</td>
-                    </tr>`).join('');
+                : list.map(function(p) {
+                    return '<tr class="hover:bg-gray-50">'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-left w-24">'
+                        + '<button class="add-to-sj-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium py-1.5 px-4 rounded transition border border-indigo-200 shadow-sm"'
+                        + ' data-id="' + p.id + '" data-serial-number="' + p.serialNumber + '">Select</button>'
+                        + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + p.partNumber + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + p.serialNumber + '</td>'
+                        + '<td class="px-6 py-4 whitespace-nowrap text-sm text-center font-semibold text-gray-700">' + p.quantity + '</td>'
+                        + '</tr>';
+                }).join('');
         }
 
         // --------------- PENDING ITEM (qty modal) ---------------
@@ -2103,6 +2233,19 @@
         // Debounced search listeners (no more instant re-render on every keystroke)
         elements.productListSearch.addEventListener('input', debouncedRenderProductList);
         elements.categoryFilter.addEventListener('change', () => { state.currentPage = 1; renderProductList(); });
+        document.getElementById('locationFilter')?.addEventListener('change', () => { state.currentPage = 1; renderProductList(); });
+        document.getElementById('stockFilter')?.addEventListener('change', () => { state.currentPage = 1; renderProductList(); });
+        // Populate location filter when products load
+        const _origFetchProducts = fetchProducts;
+        fetchProducts = async function() {
+            await _origFetchProducts();
+            const select  = document.getElementById('locationFilter');
+            if (!select) return;
+            const current = select.value;
+            const locs    = [...new Set(state.products.map(p => p.location).filter(Boolean))].sort((a,b) => locationSortKey(a).localeCompare(locationSortKey(b)));
+            select.innerHTML = '<option value="">All Locations</option>'
+                + locs.map(l => '<option value="' + l + '"' + (l === current ? ' selected' : '') + '>' + l + '</option>').join('');
+        };
         elements.selectItemSearch.addEventListener('input', debouncedRenderSelectItem);
         elements.suratJalanHistorySearch.addEventListener('input', debouncedRenderSuratJalan);
         elements.activityHistorySearch.addEventListener('input', debouncedRenderActivityHistory);
@@ -2432,17 +2575,15 @@
             );
             tbody.innerHTML = avail.length === 0
                 ? `<tr><td colspan="3" class="px-4 py-4 text-center text-sm text-gray-400">No available products found.</td></tr>`
-                : avail.map(p => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">${p.partNumber}</td>
-                        <td class="px-4 py-3 text-sm font-mono text-gray-500">${p.serialNumber}</td>
-                        <td class="px-4 py-3 text-center">
-                            <button onclick="addEditSjItem(${p.id})"
-                                class="text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">
-                                + Add
-                            </button>
-                        </td>
-                    </tr>`).join('');
+                : avail.map(function(p) {
+                    return '<tr class="hover:bg-gray-50">'
+                        + '<td class="px-4 py-3 text-sm font-medium text-gray-900">' + p.partNumber + '</td>'
+                        + '<td class="px-4 py-3 text-sm font-mono text-gray-500">' + p.serialNumber + '</td>'
+                        + '<td class="px-4 py-3 text-center">'
+                        + '<button data-pid="' + p.id + '" class="add-edit-sj-btn text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 px-3 py-1 rounded font-medium transition">+ Add</button>'
+                        + '</td>'
+                        + '</tr>';
+                }).join('');
         }
 
         function addEditSjItem(productId) {
@@ -2527,6 +2668,12 @@
         // ============================================================
         // ROLLBACK
         // ============================================================
+        // Delegated listener for edit SJ add-item button
+        document.getElementById('editSjAvailableTable')?.addEventListener('click', function(e) {
+            const btn = e.target.closest('.add-edit-sj-btn');
+            if (!btn) return;
+            addEditSjItem(parseInt(btn.dataset.pid));
+        });
 
         // Store the current rollback handler so we can swap it each time
     let _rollbackConfirmHandler = null;
@@ -2767,8 +2914,312 @@
             }
         }
 
+        // Delegated listener for smHistoryTable void button
+        document.getElementById('smHistoryTable')?.addEventListener('click', async function(e) {
+            const btn = e.target.closest('.void-sm-btn');
+            if (!btn) return;
+            const noteNo = btn.dataset.note;
+            if (!noteNo) return;
+            const reason = prompt('Void Surat Masuk: ' + noteNo + '\n\nAlasan void:');
+            if (reason === null) return;
+            if (!reason.trim()) { alert('Alasan wajib diisi.'); return; }
+            if (!confirm('Yakin void ' + noteNo + '? Tidak bisa dibatalkan.')) return;
+            try {
+                const res  = await fetch('/api/surat-masuk-void/' + encodeURIComponent(noteNo) + '/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ reason }),
+                });
+                const data = await res.json();
+                if (data.status === 'success') { showMessage('Void Berhasil', data.message); fetchSuratMasukHistory(); fetchProducts(); }
+                else showMessage('Error', data.message);
+            } catch (err) { showMessage('Error', err.message); }
+        });
+
+        // ============================================================
+        // WAREHOUSE LOCATION PICKER
+        // ============================================================
+
+        const _locPick = { rack: null, level: null, side: null };
+
+        function pickLocation(btn) {
+            const type = btn.dataset.pick;
+            const val  = btn.dataset.val;
+            _locPick[type] = val;
+
+            // Highlight selected button in this group
+            document.querySelectorAll('[data-pick="' + type + '"]').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                b.classList.add('bg-white', 'border-gray-300');
+            });
+            btn.classList.remove('bg-white', 'border-gray-300');
+            btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+
+            // Build location code and fill input
+            const code = (_locPick.rack || '') + (_locPick.level || '') + (_locPick.side || '');
+            const preview = document.getElementById('locationPreview');
+            if (preview) preview.textContent = code ? '→ ' + code : '';
+
+            if (_locPick.rack && _locPick.level && _locPick.side) {
+                const input = document.getElementById('location');
+                if (input) {
+                    input.value = code;
+                    // Reset picker selections after filling
+                    setTimeout(() => {
+                        document.querySelectorAll('.loc-pick-btn').forEach(b => {
+                            b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                            b.classList.add('bg-white', 'border-gray-300');
+                        });
+                        _locPick.rack = _locPick.level = _locPick.side = null;
+                        if (preview) preview.textContent = '';
+                    }, 800);
+                }
+            }
+        }
+
+        // Reset picker when location field is manually cleared
+        document.getElementById('location')?.addEventListener('input', function() {
+            if (!this.value) {
+                document.querySelectorAll('.loc-pick-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                    b.classList.add('bg-white', 'border-gray-300');
+                });
+                _locPick.rack = _locPick.level = _locPick.side = null;
+                const preview = document.getElementById('locationPreview');
+                if (preview) preview.textContent = '';
+            }
+        });
+
+        // ============================================================
+        // LOCATION BADGE + SORT FOR PRODUCT LIST
+        // ============================================================
+
+        const RACK_COLORS = {
+            'A': 'bg-blue-100 text-blue-800',
+            'B': 'bg-green-100 text-green-800',
+            'C': 'bg-amber-100 text-amber-800',
+            'D': 'bg-purple-100 text-purple-800',
+            'E': 'bg-red-100 text-red-800',
+        };
+
+        function locationBadge(loc) {
+            if (!loc) return '<span class="text-gray-300">—</span>';
+            const rack   = loc.charAt(0).toUpperCase();
+            const colors = RACK_COLORS[rack] || 'bg-gray-100 text-gray-700';
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ' + colors + '">' + loc + '</span>';
+        }
+
+        function locationSortKey(loc) {
+            // Sort order: Rack (A-E) → Level (1-4) → Side (L before R)
+            if (!loc || loc.length < 3) return 'ZZZ';
+            const rack  = loc.charAt(0).toUpperCase();
+            const level = loc.charAt(1);
+            const side  = loc.charAt(2).toUpperCase();
+            return rack + level + (side === 'L' ? '0' : '1');
+        }
+
+        function sortProductsByLocation(products) {
+            return [...products].sort((a, b) => {
+                const ka = locationSortKey(a.location);
+                const kb = locationSortKey(b.location);
+                return ka.localeCompare(kb);
+            });
+        }
+
+        let _locationSortActive = false;
+
+        function toggleLocationSort() {
+            _locationSortActive = !_locationSortActive;
+            const btn = document.getElementById('sortByLocationBtn');
+            if (btn) {
+                btn.classList.toggle('bg-indigo-600', _locationSortActive);
+                btn.classList.toggle('text-white',    _locationSortActive);
+                btn.classList.toggle('border-indigo-600', _locationSortActive);
+                btn.classList.toggle('bg-white',      !_locationSortActive);
+                btn.classList.toggle('text-gray-700', !_locationSortActive);
+                btn.classList.toggle('border-gray-300',!_locationSortActive);
+            }
+            renderProductList();
+        }
+// ============================================================
+        // STOCK OPNAME
+        // ============================================================
+
+        let currentOpnameId   = null;
+        let currentOpnameData = null;
+
+        async function fetchStockOpnames() {
+            const list = document.getElementById('opnameSessionList');
+            if (!list) return;
+            list.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Loading...</p>';
+            try {
+                const res  = await fetch('/api/opname/');
+                const data = await res.json();
+                if (!data.length) {
+                    list.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Belum ada session opname.</p>';
+                    return;
+                }
+                list.innerHTML = data.map(function(o) {
+                    const statusColor = o.status === 'completed'
+                        ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
+                    const progress = o.total > 0 ? Math.round(o.counted / o.total * 100) : 0;
+                    return '<div class="opname-session-row flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer" data-id="' + o.id + '">'
+                        + '<div>'
+                        + '<p class="font-semibold text-gray-900">' + o.date + '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ' + statusColor + '">' + (o.status === 'completed' ? 'Selesai' : 'Open') + '</span></p>'
+                        + '<p class="text-xs text-gray-500 mt-0.5">' + (o.notes || 'No notes') + ' &middot; ' + o.counted + '/' + o.total + ' dihitung &middot; ' + o.discrepant + ' selisih</p>'
+                        + '<div class="w-48 bg-gray-200 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width:' + progress + '%"></div></div>'
+                        + '</div>'
+                        + '<svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>'
+                        + '</div>';
+                }).join('');
+            } catch (err) {
+                list.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Error: ' + err.message + '</p>';
+            }
+        }
+
+        // Delegated click for session rows
+        document.getElementById('opnameSessionList')?.addEventListener('click', function(e) {
+            const row = e.target.closest('.opname-session-row');
+            if (row) loadOpnameDetail(parseInt(row.dataset.id));
+        });
+
+        async function createStockOpname() {
+            const date  = document.getElementById('opnameDate').value;
+            const notes = document.getElementById('opnameNotes').value.trim();
+            const fb    = document.getElementById('opnameFeedback');
+            if (!date) { fb.textContent = '\u26a0 Tanggal wajib diisi.'; fb.className = 'text-sm text-amber-600 w-full'; return; }
+            fb.textContent = 'Membuat...'; fb.className = 'text-sm text-gray-400 w-full';
+            try {
+                const res  = await fetch('/api/opname/create/', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ date, notes }),
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    fb.textContent = '\u2713 ' + data.message; fb.className = 'text-sm text-green-600 w-full';
+                    document.getElementById('opnameDate').value  = '';
+                    document.getElementById('opnameNotes').value = '';
+                    await fetchStockOpnames();
+                    loadOpnameDetail(data.id);
+                } else {
+                    fb.textContent = '\u274c ' + data.message; fb.className = 'text-sm text-red-600 w-full';
+                }
+            } catch (err) {
+                fb.textContent = '\u274c ' + err.message; fb.className = 'text-sm text-red-600 w-full';
+            }
+        }
+
+        async function loadOpnameDetail(id) {
+            currentOpnameId = id;
+            const panel = document.getElementById('opnameDetailPanel');
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('opnameItemsTable').innerHTML =
+                '<tr><td colspan="8" class="px-6 py-8 text-center text-sm text-gray-400">Loading...</td></tr>';
+            try {
+                const res  = await fetch('/api/opname/' + id + '/');
+                const data = await res.json();
+                currentOpnameData = data;
+
+                document.getElementById('opnameDetailTitle').textContent = 'Stock Opname \u2014 ' + data.date;
+                document.getElementById('opnameDetailSub').textContent   =
+                    (data.notes || '') + ' \u00b7 ' + data.counted + '/' + data.total + ' dihitung \u00b7 ' + data.discrepant + ' selisih';
+                document.getElementById('opnamePdfBtn').href = '/api/opname/' + id + '/pdf/';
+                document.getElementById('opnameCsvBtn').href = '/api/opname/' + id + '/csv/';
+
+                const isCompleted = data.status === 'completed';
+                document.getElementById('opnameCompleteBtn').style.display = isCompleted ? 'none' : '';
+
+                // Progress bar
+                const pct = data.total > 0 ? Math.round(data.counted / data.total * 100) : 0;
+                document.getElementById('opnameProgress').textContent    = data.counted + ' / ' + data.total;
+                document.getElementById('opnameProgressBar').style.width = pct + '%';
+
+                // Render items grouped by location
+                let lastLoc = null;
+                document.getElementById('opnameItemsTable').innerHTML = data.items.map(function(item) {
+                    const diff = item.discrepancy;
+                    const rowBg = item.counted_qty === null ? ''
+                        : diff === 0 ? 'bg-green-50' : 'bg-amber-50';
+                    const diffDisplay = diff === null ? '<span class="text-gray-300">—</span>'
+                        : diff > 0  ? '<span class="text-amber-600 font-bold">+' + diff + '</span>'
+                        : diff < 0  ? '<span class="text-red-600 font-bold">' + diff + '</span>'
+                        : '<span class="text-green-600 font-bold">\u2713</span>';
+
+                    const countedVal = item.counted_qty !== null ? item.counted_qty : '';
+                    const inputEl = isCompleted
+                        ? '<span class="font-medium">' + (item.counted_qty !== null ? item.counted_qty : '\u2014') + '</span>'
+                        : '<input type="number" min="0" value="' + countedVal + '" placeholder="\u2014" data-item-id="' + item.id + '" onchange="saveOpnameCount(this)" class="w-20 text-center rounded border-gray-300 text-sm py-1 px-2 border opname-count-input">';
+
+                    const locBadge = locationBadge(item.location || '-');
+                    return '<tr class="' + rowBg + '">'
+                        + '<td class="px-4 py-2 text-sm text-center">' + locBadge + '</td>'
+                        + '<td class="px-4 py-2 text-sm font-medium text-gray-900">' + item.part_number + '</td>'
+                        + '<td class="px-4 py-2 text-sm text-gray-500 font-mono">' + item.serial_number + '</td>'
+                        + '<td class="px-4 py-2 text-sm text-gray-500 max-w-xs truncate">' + (item.description || '-') + '</td>'
+                        + '<td class="px-4 py-2 text-sm text-center font-medium">' + item.system_qty + '</td>'
+                        + '<td class="px-4 py-2 text-sm text-center">' + inputEl + '</td>'
+                        + '<td class="px-4 py-2 text-sm text-center">' + diffDisplay + '</td>'
+                        + '<td class="px-4 py-2"><input type="text" placeholder="catatan..." value="' + (item.notes || '') + '" data-item-id="' + item.id + '" onchange="saveOpnameNote(this)" class="w-full text-xs rounded border-gray-200 py-1 px-2 border ' + (isCompleted ? 'bg-gray-50 cursor-not-allowed' : '') + '" ' + (isCompleted ? 'readonly' : '') + '></td>'
+                        + '</tr>';
+                }).join('');
+            } catch (err) {
+                document.getElementById('opnameItemsTable').innerHTML =
+                    '<tr><td colspan="8" class="px-6 py-8 text-center text-sm text-red-500">Error: ' + err.message + '</td></tr>';
+            }
+        }
+
+        async function saveOpnameCount(input) {
+            const itemId    = input.dataset.itemId;
+            const countedQty = parseInt(input.value);
+            if (isNaN(countedQty) || countedQty < 0) return;
+            try {
+                const res  = await fetch('/api/opname/' + currentOpnameId + '/count/', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ itemId: parseInt(itemId), countedQty }),
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    // Refresh silently
+                    loadOpnameDetail(currentOpnameId);
+                }
+            } catch (err) { console.error('Save count error:', err); }
+        }
+
+        async function saveOpnameNote(input) {
+            const itemId = input.dataset.itemId;
+            const notes  = input.value.trim();
+            try {
+                await fetch('/api/opname/' + currentOpnameId + '/count/', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ itemId: parseInt(itemId), countedQty: null, notes }),
+                });
+            } catch (err) { console.error('Save note error:', err); }
+        }
+
+        async function completeStockOpname() {
+            if (!currentOpnameId) return;
+            if (!confirm('Tandai opname ini sebagai selesai? Anda tidak bisa mengubah hitungan setelah selesai.')) return;
+            try {
+                const res  = await fetch('/api/opname/' + currentOpnameId + '/complete/', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showMessage('Opname Selesai', data.message);
+                    fetchStockOpnames();
+                    loadOpnameDetail(currentOpnameId);
+                } else {
+                    showMessage('Error', data.message);
+                }
+            } catch (err) { showMessage('Error', err.message); }
+        }
 
     </script>
+
+    
+
     <!-- ===== EDIT SURAT JALAN MODAL ===== -->
     <div id="editSjModal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50 invisible">
         <div class="modal-overlay absolute inset-0"></div>
